@@ -1,0 +1,38 @@
+node_modules
+.next
+out
+.env
+.env.local
+.env.*.local
+.env.*
+.vscode
+.DS_Store
+npm-debug.log*
+.vercel
+
+!.env.example
+
+/.env.local
+/.env.local.setup-*
+.env*
+
+# Keys, credentials and local exports
+*.pem
+*.key
+*.p12
+*.pfx
+*service-account*.json
+credentials*.json
+.aws/
+.ssh/
+artifacts/
+archive/
+*.tsbuildinfo
+
+# Keep the empty environment template available to deployment operators.
+!.env.example
+
+# Real customer snapshots must never be committed.
+mart-data.json
+**/mart-data.json
+private-data/
