@@ -1,0 +1,11 @@
+{
+  "localOnly": true,
+  "productionModified": false,
+  "actualBackupImport": "PASS",
+  "connections": 4,
+  "allSourcesDisabled": true,
+  "bindingsExact": true,
+  "usersHashesAndPermissionsExact": true,
+  "walletRows": 2,
+  "unreadableArchivesNotPublished": true
+}

@@ -19,8 +19,11 @@
     "archive:migrate": "node scripts/storage.cjs archive-migrate",
     "test:archive": "node tests/period-archive.test.cjs",
     "test:excel": "node tests/excel-export.test.cjs",
-    "test:timeweb": "node tests/timeweb-compat.test.cjs && node tests/timeweb-preflight.test.cjs",
-    "migration:check": "node scripts/timeweb-preflight.cjs"
+    "test:timeweb": "node tests/timeweb-compat.test.cjs && node tests/timeweb-preflight.test.cjs && node --test tests/timeweb-recovery.test.cjs",
+    "migration:check": "node scripts/timeweb-preflight.cjs",
+    "recovery:export": "node scripts/timeweb-recovery.cjs export",
+    "recovery:plan": "node scripts/timeweb-recovery.cjs plan",
+    "recovery:import": "node scripts/timeweb-recovery.cjs import"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.1.0",

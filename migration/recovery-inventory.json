@@ -1,0 +1,26 @@
+{
+  "format": "mart-timeweb-recovery-v1",
+  "exportedAt": "2026-11-10T19:37:27.000Z",
+  "readOnlySource": true,
+  "rows": {
+    "mart_connections": 4,
+    "mart_source_links": 5,
+    "mart_source_snapshots": 101,
+    "mart_source_runs": 479,
+    "mart_dashboard_archive": 27,
+    "mart_source_input_archive": 68,
+    "mart_wallet_percentage": 2,
+    "mart_user_write_lock": 0,
+    "mart_login_attempts": 1,
+    "mart_user_registry": 1
+  },
+  "sourceTypes": {
+    "fintablo": 1,
+    "crm": 1,
+    "googleSheets": 1,
+    "debt": 1
+  },
+  "encryptedPayloadsReadableWithoutOldKey": false,
+  "backupSha256": "329dc989f53ff6e285cc9d4de474a66ae858d5f77383fa84770b7a0008bf16b1",
+  "byteSize": 133634954
+}

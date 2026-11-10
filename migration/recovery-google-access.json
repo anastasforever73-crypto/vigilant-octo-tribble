@@ -1,0 +1,14 @@
+[
+  {
+    "type": "googleSheets",
+    "spreadsheetConfigured": true,
+    "existingGoogleKeyHasReadAccess": true,
+    "sheets": 33
+  },
+  {
+    "type": "debt",
+    "spreadsheetConfigured": true,
+    "existingGoogleKeyHasReadAccess": true,
+    "sheets": 26
+  }
+]

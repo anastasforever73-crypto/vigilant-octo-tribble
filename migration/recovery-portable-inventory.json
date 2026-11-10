@@ -1,0 +1,35 @@
+{
+  "sourceTypes": {
+    "fintablo": 1,
+    "crm": 1,
+    "googleSheets": 1,
+    "debt": 1
+  },
+  "bindings": [
+    {
+      "section": "opiu",
+      "dataset": "pnl"
+    },
+    {
+      "section": "cash",
+      "dataset": "cash"
+    },
+    {
+      "section": "cash",
+      "dataset": "balances"
+    },
+    {
+      "section": "overview",
+      "dataset": "nlpkPayables"
+    },
+    {
+      "section": "debt",
+      "dataset": "payables"
+    }
+  ],
+  "managedUsers": 2,
+  "disabledUsers": 0,
+  "adminLoginCollision": false,
+  "legacyViewerCollision": false,
+  "walletHistoryRows": 2
+}
