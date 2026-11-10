@@ -31,7 +31,7 @@ const ENCRYPTED = {
 };
 const ORDER = { mart_connections:'id', mart_source_links:'id', mart_source_runs:'id', mart_wallet_percentage:'effective_from', mart_user_write_lock:'id', mart_login_attempts:'bucket', mart_user_registry:'id', ...ENCRYPTED };
 async function exportBackup(sql, sourceUrl) {
-  const options = () => ({ isolationLevel: 'RepeatableRead', readOnly: true, fetchOptions: { signal: AbortSignal.timeout(60000) } });
+  const options = () => ({ isolationLevel: 'RepeatableRead', readOnly: true });
   const capture = () => sql.transaction(TABLES.map(name => sql.query(ENCRYPTED[name]
     ? `SELECT ${ORDER[name]},md5(row_to_json(t)::text) AS recovery_hash,octet_length(payload) AS payload_bytes FROM public.${name} t ORDER BY ${ORDER[name]}`
     : `SELECT * FROM public.${name} ORDER BY ${ORDER[name]}`)), options());
@@ -134,9 +134,9 @@ async function main() {
   if (!['export','plan','import'].includes(command) || !envFile || !backupFile) fail('usage_export_plan_import_env_file_backup_file_optional_report');
   const env = load(envFile);
   if (command === 'export') {
-    const { neon } = require('@neondatabase/serverless');
+    const { postgres } = require('./lib/postgres.cjs');
     if (!env.DATABASE_URL) fail('source_database_required');
-    const sql = neon(env.DATABASE_URL);
+    const sql = postgres(env.DATABASE_URL, { env, statementTimeoutMs: 60000 });
     const backup = await exportBackup(sql, env.DATABASE_URL);
     privateWrite(backupFile, backup);
     const result = summary(backup);
@@ -149,12 +149,12 @@ async function main() {
   const result = { ...summary(backup), targetSeparate: true, restore: ['disabled_connections','source_bindings','user_hashes_and_permissions','wallet_percentage_history','active_login_limits'], quarantineOnly: ['encrypted_credentials','source_snapshots','report_archives','source_input_archives','old_sync_logs'], productionModified: false };
   if (command === 'plan') { console.log(JSON.stringify(result)); return; }
   if (env.RECOVERY_CONFIRM_EMPTY_TARGET !== 'new-isolated-timeweb-storage') fail('empty_target_confirmation_required');
-  const { neon } = require('@neondatabase/serverless');
-  const sql = neon(env.DATABASE_URL, { fetchOptions: { signal: AbortSignal.timeout(60000) } });
+  const { postgres } = require('./lib/postgres.cjs');
+  const sql = postgres(env.DATABASE_URL, { env, statementTimeoutMs: 60000 });
   const dir = path.join(__dirname, '../migrations');
   const migrations = fs.readdirSync(dir).filter(n => /^\d+.*\.sql$/.test(n)).sort().map(n => fs.readFileSync(path.join(dir,n),'utf8'));
   await sql.transaction(recoveryQueries(sql, backup, env, migrations), { isolationLevel: 'Serializable' });
   console.log(JSON.stringify({ ...result, imported: true, sourcesEnabled: false }));
 }
 module.exports = { identity, privateWrite, summary, exportBackup, validate, emptySecrets, recoveryQueries };
-if (require.main === module) main().catch(e => { console.log(JSON.stringify({ ready:false, code:e.safeCode || 'recovery_failed_no_details_logged' })); process.exitCode=1; });
+if (require.main === module) main().finally(() => require('./lib/postgres.cjs').closePools()).catch(e => { console.log(JSON.stringify({ ready:false, code:e.safeCode || 'recovery_failed_no_details_logged' })); process.exitCode=1; });

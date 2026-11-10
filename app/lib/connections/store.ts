@@ -3,14 +3,14 @@ import { bindingKey } from './merge';
 import { contentHash } from '../archive-version';
 import 'server-only';
 import { randomUUID } from 'node:crypto';
-import { neon } from '@neondatabase/serverless';
+import { postgres } from '../postgres';
 import { seal, unseal } from './crypto';
 import { storageConfiguration, storageFailure } from './storage-health';
 import { conflictIssues, maskedSecrets, ConnectionError, type Binding, type Connection, type ConnectionInput, type Secrets, type StoredData, type StorageStatus } from './model';
 function database() {
   const issue = storageConfiguration();
   if (issue) throw new ConnectionError(issue.code!, issue.message, 503);
-  return neon(process.env.DATABASE_URL!, { fetchOptions: { signal: AbortSignal.timeout(15000) } });
+  return postgres(process.env.DATABASE_URL!, { statementTimeoutMs: 15000 });
 }
 function dbError(error: unknown): never {
   if (error instanceof ConnectionError) throw error;
@@ -30,7 +30,7 @@ export async function storageStatus(): Promise<StorageStatus> {
     return { ...issue, checks };
   }
   try {
-    const sql = neon(process.env.DATABASE_URL!, { fetchOptions: { signal: AbortSignal.timeout(15000) } });
+    const sql = postgres(process.env.DATABASE_URL!, { statementTimeoutMs: 15000 });
     await sql`SELECT 1`;
     checks.database = 'ready';
     await sql`SELECT c.id,c.name,c.type,c.enabled,c.revision,c.write_token,c.config,c.secrets,c.secret_fields,

@@ -6,7 +6,7 @@ const Module = require('node:module');
 const crypto = require('node:crypto');
 const ts = require('typescript');
 const root = path.resolve(__dirname, '..');
-require('@next/env').loadEnvConfig(root, false, { info() {}, error() { console.error('Не удалось прочитать файл окружения. Проверьте синтаксис локально.'); } });
+require('./lib/operator-env.cjs').operatorEnv();
 // Load exactly the application's server modules outside Next's bundler.
 const originalLoad = Module._load;
 Module._load = function(name, parent, main) {
@@ -17,7 +17,7 @@ Module._load = function(name, parent, main) {
 require.extensions['.ts'] = (module, filename) => module._compile(ts.transpileModule(fs.readFileSync(filename, 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, esModuleInterop: true } }).outputText, filename);
 const { storageConfiguration, storageFailure } = require('../app/lib/connections/storage-health.ts');
 const { storageStatus, getConnection, removeConnection } = require('../app/lib/connections/store.ts');
-const { neon } = require('@neondatabase/serverless');
+const { postgres } = require('./lib/postgres.cjs');
 const { unseal } = require('../app/lib/connections/crypto.ts');
 function ensure(value, message) { if (!value) throw new OperatorError(message); }
 class OperatorError extends Error {}
@@ -80,10 +80,10 @@ async function verify(sql) {
   ensure(['check', 'migrate', 'archive-migrate', 'verify'].includes(command), 'Используйте storage:check, storage:migrate или storage:verify.');
   const issue = storageConfiguration();
   if (issue) throw new OperatorError(issue.message);
-  const sql = neon(process.env.DATABASE_URL, { fetchOptions: { signal: AbortSignal.timeout(15000) } });
+  const sql = postgres(process.env.DATABASE_URL, { statementTimeoutMs: 15000 });
   if (command === 'migrate' || command === 'archive-migrate') {
     // This fixed migration has no procedural SQL; run its statements as one transaction.
-    const source = (command === 'archive-migrate' ? ['004-dashboard-archive.sql', '005-durable-period-archive.sql', '006-source-input-archive.sql'] : ['001-connections.sql', '002-multiple-source-links.sql', '004-dashboard-archive.sql', '005-durable-period-archive.sql', '006-source-input-archive.sql', '007-wallet-percentage.sql', '008-user-registry.sql']).map(file => fs.readFileSync(path.join(root, 'migrations', file), 'utf8')).join('\n');
+    const source = (command === 'archive-migrate' ? ['004-dashboard-archive.sql', '005-durable-period-archive.sql', '006-source-input-archive.sql'] : ['001-connections.sql', '002-multiple-source-links.sql', '003-user-access.sql', '004-dashboard-archive.sql', '005-durable-period-archive.sql', '006-source-input-archive.sql', '007-wallet-percentage.sql', '008-user-registry.sql']).map(file => fs.readFileSync(path.join(root, 'migrations', file), 'utf8')).join('\n');
     const statements = source.replace(/^--.*$/gm, '').split(';').map(s => s.trim()).filter(s => s && !/^(BEGIN|COMMIT)$/i.test(s));
     await sql.transaction(statements.map(statement => sql.query(statement, [])));
     console.log('Миграции подключений выполнены в одной транзакции.');

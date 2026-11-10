@@ -23,21 +23,25 @@
     "migration:check": "node scripts/timeweb-preflight.cjs",
     "recovery:export": "node scripts/timeweb-recovery.cjs export",
     "recovery:plan": "node scripts/timeweb-recovery.cjs plan",
-    "recovery:import": "node scripts/timeweb-recovery.cjs import"
+    "recovery:import": "node scripts/timeweb-recovery.cjs import",
+    "storage:tls-check": "node scripts/postgres-check.cjs",
+    "test:postgres": "node --test tests/postgres.test.cjs",
+    "test:postgres:wire": "node --test tests/postgres-wire.test.cjs"
   },
   "dependencies": {
-    "@neondatabase/serverless": "^1.1.0",
+    "exceljs": "4.4.0",
     "googleapis": "^160.0.0",
     "lucide-react": "^0.468.0",
     "next": "16.2.6",
+    "pg": "8.23.1",
     "react": "19.2.6",
     "react-dom": "19.2.6",
-    "recharts": "^3.8.0",
-    "exceljs": "4.4.0"
+    "recharts": "^3.8.0"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.2.1",
     "@types/node": "^22.19.19",
+    "@types/pg": "^8.23.1",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "eslint": "^9.39.4",

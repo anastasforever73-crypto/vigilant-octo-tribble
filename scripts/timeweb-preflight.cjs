@@ -1,6 +1,6 @@
 // Read-only migration checks. Never log environment values, hashes or registry contents.
 const fs = require('node:fs');
-const { neon } = require('@neondatabase/serverless');
+const { postgres } = require('./lib/postgres.cjs');
 try {
 if (process.env.MIGRATION_ENV_FILE) {
   const values = JSON.parse(fs.readFileSync(process.env.MIGRATION_ENV_FILE, 'utf8'));
@@ -14,7 +14,7 @@ async function main() {
   if (process.env.AUTH_SECRET && process.env.AUTH_SECRET.length < 32) add('invalid_auth_secret', 'AUTH_SECRET');
   if (process.env.CONNECTIONS_ENCRYPTION_KEY && (!/^[a-f0-9]{64}$/i.test(process.env.CONNECTIONS_ENCRYPTION_KEY) || process.env.CONNECTIONS_ENCRYPTION_KEY === process.env.AUTH_SECRET)) add('invalid_encryption_key', 'CONNECTIONS_ENCRYPTION_KEY');
   if (issues.length) return;
-  const sql = neon(process.env.DATABASE_URL, { fetchOptions: { signal: AbortSignal.timeout(15000) } });
+  const sql = postgres(process.env.DATABASE_URL, { statementTimeoutMs: 15000 });
   try {
     const tables = ['mart_connections', 'mart_source_links', 'mart_source_snapshots', 'mart_source_runs', 'mart_dashboard_archive', 'mart_source_input_archive', 'mart_wallet_percentage', 'mart_user_write_lock', 'mart_login_attempts', 'mart_user_registry'];
     // Resolve table names without reading or logging source records.

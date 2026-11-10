@@ -6,7 +6,7 @@ const Module = require('node:module');
 const crypto = require('node:crypto');
 const ts = require('typescript');
 const root = path.resolve(__dirname, '..');
-require('@next/env').loadEnvConfig(root, false, { info() {}, error() { console.error('Не удалось прочитать файл окружения. Проверьте синтаксис локально.'); } });
+require('./lib/operator-env.cjs').operatorEnv();
 // Load exactly the application's server modules outside Next's bundler.
 const originalLoad = Module._load;
 Module._load = function(name, parent, main) {
@@ -16,8 +16,8 @@ Module._load = function(name, parent, main) {
 };
 require.extensions['.ts'] = (module, filename) => module._compile(ts.transpileModule(fs.readFileSync(filename, 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, esModuleInterop: true } }).outputText, filename);
 (async()=>{
-const {neon}=require('@neondatabase/serverless');
-const sql=neon(process.env.DATABASE_URL);
+const {postgres}=require('./lib/postgres.cjs');
+const sql=postgres(process.env.DATABASE_URL);
 if(process.argv[2] !== '--apply') throw new Error('Use --apply explicitly after review');
 const [connectionsBefore,linksBefore]=await sql.transaction([sql`SELECT id,name,type,enabled,revision,config,status,last_success FROM mart_connections ORDER BY created_at`,sql`SELECT connection_id,section,dataset,definition FROM mart_source_links`]);
 fs.mkdirSync('artifacts/source-recovery',{recursive:true});

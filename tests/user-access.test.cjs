@@ -25,7 +25,7 @@ const sql = async (strings, ...values) => {
 };
 Module._load = function(name, parent, main) {
   if (name === 'server-only') return {};
-  if (name === '@neondatabase/serverless') return { neon: () => sql };
+  if (name.endsWith('/postgres') || name.endsWith('/lib/postgres.cjs')) return { postgres: () => sql };
   if (name.startsWith('@/')) name = process.cwd() + '/' + name.slice(2);
   return load.call(this, name, parent, main);
 };

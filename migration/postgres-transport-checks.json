@@ -1,0 +1,14 @@
+{
+  "driver": "pg 8.23.1 / standard PostgreSQL TCP",
+  "neonDependencyRemoved": true,
+  "localServerVersion": "PostgreSQL 18.6",
+  "tls": "TLSv1.3, CA and hostname verified; wrong CA and wrong hostname rejected",
+  "transactions": "single backend; READ ONLY and rollback PASS",
+  "migrations": "all 8 on empty PostgreSQL PASS; nonempty target refused",
+  "actualBackupRestore": "PASS on isolated localhost PostgreSQL",
+  "httpAndBrowser": "admin and legacy viewer login, role boundaries, main pages, 4 disabled connections and 2 managed users PASS",
+  "sourceVercelNeonModified": false,
+  "timewebAppRegion": "Russia / Moscow MSK-1",
+  "databaseCreated": false,
+  "publicationMode": "User requested publication without a database; storage features remain unconfigured"
+}

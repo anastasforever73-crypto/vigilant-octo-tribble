@@ -1,7 +1,7 @@
 import 'server-only';
 import { AsyncLocalStorage } from 'node:async_hooks';
 import { randomUUID } from 'node:crypto';
-import { neon } from '@neondatabase/serverless';
+import { postgres } from './postgres';
 import { contentHash, CALCULATION_VERSION, reportContentHash } from './archive-version';
 import { seal, unseal } from './connections/crypto';
 import { MemoryCache } from './memory-cache';
@@ -39,7 +39,7 @@ export async function sourceInput<T>(identity: unknown, load: () => Promise<T>, 
   return structuredClone(await promise);
 
   async function read(): Promise<T> {
-    const sql = neon(process.env.DATABASE_URL!, { fetchOptions: { signal: AbortSignal.timeout(15000) } });
+    const sql = postgres(process.env.DATABASE_URL!, { statementTimeoutMs: 15000 });
     let token: string | undefined;
     try {
       if (!job!.force) {

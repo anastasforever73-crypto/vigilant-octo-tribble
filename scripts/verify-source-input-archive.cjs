@@ -3,9 +3,9 @@ require('./date-cache-register.cjs');
 const assert=require('node:assert/strict'),{randomUUID}=require('node:crypto'),{execFileSync}=require('node:child_process'),fs=require('node:fs');
 const {sourceInput,withSourceArchive}=require('../app/lib/source-input-archive.ts');
 const {contentHash,CALCULATION_VERSION}=require('../app/lib/archive-version.ts');
-const {neon}=require('@neondatabase/serverless');
+const {postgres}=require('./lib/postgres.cjs');
 (async()=>{
- const sql=neon(process.env.DATABASE_URL),identity=['date-cache-verification',process.argv[2]||randomUUID()];
+ const sql=postgres(process.env.DATABASE_URL),identity=['date-cache-verification',process.argv[2]||randomUUID()];
  const key=contentHash([CALCULATION_VERSION,identity]);
  if(process.argv[2]) { const value=await withSourceArchive(false,()=>sourceInput(identity,async()=>{throw Error('Source calls forbidden after restart')}));assert.equal(value.rows[0].amount,200); console.log('restart passed');return; }
  let reads=0,value=100;const reader=async()=>{reads++;await new Promise(r=>setTimeout(r,40));return {rows:[{date:'2001-01-02',amount:value}],updatedAt:new Date().toISOString()}};

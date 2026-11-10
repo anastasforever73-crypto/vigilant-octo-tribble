@@ -1,6 +1,6 @@
 import 'server-only';
 import { createHash, randomUUID } from 'node:crypto';
-import { neon } from '@neondatabase/serverless';
+import { postgres } from './postgres';
 import { allSections, validSections } from './user-access';
 import type { Section } from './connections/model';
 
@@ -53,7 +53,7 @@ async function legacyRaw(): Promise<string> {
 }
 function database() {
   if (!process.env.DATABASE_URL) throw new UserRegistryError('Хранилище пользователей не настроено.');
-  return neon(process.env.DATABASE_URL, { fetchOptions: { signal: AbortSignal.timeout(8000) } });
+  return postgres(process.env.DATABASE_URL, { statementTimeoutMs: 8000 });
 }
 export async function readRegistry() {
   try {

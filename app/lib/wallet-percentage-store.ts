@@ -1,9 +1,9 @@
 import 'server-only';
-import { neon } from '@neondatabase/serverless';
+import { postgres } from './postgres';
 import { parseWalletPercentage, type WalletPercentageRule } from './wallet-percentage';
 function database() {
   if (!process.env.DATABASE_URL) throw new Error('Для сохранения процента подключите базу данных.');
-  return neon(process.env.DATABASE_URL, { fetchOptions: { signal: AbortSignal.timeout(15000) } });
+  return postgres(process.env.DATABASE_URL, { statementTimeoutMs: 15000 });
 }
 export async function readWalletPercentage(): Promise<WalletPercentageRule[]> {
   if (!process.env.DATABASE_URL) return [];

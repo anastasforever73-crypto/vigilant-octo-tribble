@@ -2,7 +2,7 @@
 // Read actual sources without editing them. Only the new archive is written.
 const fs = require('node:fs'), Module = require('node:module'), ts = require('typescript');
 const assert = require('node:assert/strict');
-require('@next/env').loadEnvConfig(process.cwd(), false, { info() {}, error() {} });
+require('./lib/operator-env.cjs').operatorEnv();
 const original = Module._load;
 Module._load = function(name, parent, main) {
   if (name === 'server-only') return {};
@@ -10,12 +10,12 @@ Module._load = function(name, parent, main) {
   return original.call(this, name, parent, main);
 };
 require.extensions['.ts'] = (m, f) => m._compile(ts.transpileModule(fs.readFileSync(f, 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, esModuleInterop: true } }).outputText, f);
-const { neon } = require('@neondatabase/serverless');
+const { postgres } = require('./lib/postgres.cjs');
 const crypto = require('node:crypto');
 const archive = require('../app/lib/period-archive.ts');
 let stage = 'create';
 (async () => {
-  const sql = neon(process.env.DATABASE_URL);
+  const sql = postgres(process.env.DATABASE_URL);
   const spec = { kind: `verification-${crypto.randomUUID()}`, start: '2001-01-01', end: '2001-01-31', load: async () => ({ value: 1 }), complete: d => typeof d.value === 'number' };
   const key = archive.archiveKey(spec);
   const checks = [];
