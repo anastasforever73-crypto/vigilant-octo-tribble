@@ -65,7 +65,7 @@ export async function POST(request: NextRequest) {
     if (attempt.blockedUntil > Date.now()) return blocked();
     if (attempt.blockedUntil) { attempt.count = 0; attempt.blockedUntil = 0; }
     // Run the same expensive hash check for unknown logins, without exposing account existence.
-    const hash = account?.passwordHash || process.env.ADMIN_PASSWORD_HASH!;
+    const hash = account?.passwordHash || findAccount(process.env.ADMIN_LOGIN!, [])!.passwordHash;
     if (!(await verifyPassword(body.password, hash, isLegacyAccount(account, viewers))) || !account?.enabled) {
       attempt.count++;
       if (attempt.count >= 5 || (reservation && reservation.count >= 5)) { attempt.blockedUntil = Date.now() + lockoutMs; return blocked(); }

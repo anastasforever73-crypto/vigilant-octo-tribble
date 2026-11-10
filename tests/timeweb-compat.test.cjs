@@ -67,6 +67,24 @@ test('pinned HTTPS origin works behind Timeweb proxy and rejects spoofed or fore
   assert.equal(trustedRequestOrigin(request('https://app.example.test')), null);
   delete process.env.APP_ORIGIN;
 });
+test('dotenv-escaped legacy hashes retain passwords, roles and canonical sessions', async () => {
+  const { POST } = require('../app/api/auth/login/route.ts');
+  for (const role of ['admin', 'user']) {
+    const key = `${role.toUpperCase()}_PASSWORD_HASH`;
+    const original = process.env[key];
+    const existing = auth.createSession(role);
+    try {
+      process.env[key] = original.replace(/\$/g, '\\$');
+      assert.equal(auth.authConfigured(), true);
+      assert.equal((await auth.resolveSession(existing)).role, role);
+      const response = await POST(new NextRequest('http://localhost:3212/api/auth/login', { method: 'POST', headers: { origin: 'http://localhost:3212', 'content-type': 'application/json' }, body: JSON.stringify({ login: process.env[`${role.toUpperCase()}_LOGIN`], password }) }));
+      assert.equal(response.status, 200);
+      assert.equal((await auth.resolveSession(response.cookies.get(auth.SESSION_COOKIE).value)).role, role);
+      process.env[key] = 'invalid\\$hash';
+      assert.equal(auth.findAccount(process.env[`${role.toUpperCase()}_LOGIN`]), undefined);
+    } finally { process.env[key] = original; }
+  }
+});
 test('production proxy login works without APP_ORIGIN and rejects cross-origin or forwarded-host substitution', async () => {
   const previousMode=process.env.NODE_ENV;
   process.env.NODE_ENV='production';

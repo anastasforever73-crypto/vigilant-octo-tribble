@@ -13,6 +13,13 @@ export type { Role } from './user-access';
 export const SESSION_COOKIE = 'mart_trade_session';
 const lifetime = 8 * 60 * 60;
 type Account = { login: string; role: Role; passwordHash: string; enabled: boolean; sections: Section[]; revision?: string };
+// Some hosting panels retain dotenv escaping in environment values. Decode only
+// the fixed scrypt format of the original environment-backed accounts.
+function environmentHash(value: unknown) {
+  if (typeof value !== 'string') return value;
+  const decoded = value.replace(/\\\$/g, '$');
+  return validHash(decoded) ? decoded : value;
+}
 export type Session = { login: string; role: Role; exp: number; nonce: string; version: string; sections: Section[] };
 function secret() { const value = process.env.AUTH_SECRET || ''; return value.length >= 32 ? value : ''; }
 function signature(value: string) { return createHmac('sha256', secret()).update(value).digest('base64url'); }
@@ -78,6 +85,7 @@ export async function guard(request: NextRequest, role?: Role, section?: Section
 function accounts(viewers?: Viewer[]): Account[] | null {
   const result: Account[] = [];
   const add = (login: unknown, passwordHash: unknown, role: Role) => {
+    passwordHash = environmentHash(passwordHash);
     if (typeof login !== 'string' || !login.trim() || login !== login.trim() || login.length > 200 ||
         typeof passwordHash !== 'string' || !validHash(passwordHash) || result.some(account => account.login === login)) return false;
     result.push({ login, passwordHash, role, enabled: true, sections: [...allSections] });
@@ -102,7 +110,7 @@ export async function hashPin(pin: string) {
 }
 export function isLegacyAccount(account: Account | undefined, viewers: Viewer[] = []) {
   return Boolean(account && account.login === process.env[`${account.role.toUpperCase()}_LOGIN`]
-    && account.passwordHash === process.env[`${account.role.toUpperCase()}_PASSWORD_HASH`]
+    && account.passwordHash === environmentHash(process.env[`${account.role.toUpperCase()}_PASSWORD_HASH`])
     && (account.role === 'admin' || !viewers.some(user => user.login === account.login)));
 }
 export async function verifyPassword(password: string, hash: string, allowLegacyPassword = false) {
