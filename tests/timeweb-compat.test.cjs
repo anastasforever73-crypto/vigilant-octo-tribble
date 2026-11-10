@@ -67,3 +67,29 @@ test('pinned HTTPS origin works behind Timeweb proxy and rejects spoofed or fore
   assert.equal(trustedRequestOrigin(request('https://app.example.test')), null);
   delete process.env.APP_ORIGIN;
 });
+test('production proxy login works without APP_ORIGIN and rejects cross-origin or forwarded-host substitution', async () => {
+  const previousMode=process.env.NODE_ENV;
+  process.env.NODE_ENV='production';
+  delete process.env.APP_ORIGIN;
+  const { POST }=require('../app/api/auth/login/route.ts');
+  const { trustedRequestOrigin }=require('../app/lib/request-origin.ts');
+  const origin='https://dashboard.example.test';
+  const request=(supplied=origin,host='dashboard.example.test')=>new NextRequest('http://0.0.0.0:3000/api/auth/login',{method:'POST',headers:{host,origin:supplied,'x-forwarded-host':'dashboard.example.test','x-forwarded-proto':'https','content-type':'application/x-www-form-urlencoded'},body:new URLSearchParams({login:process.env.ADMIN_LOGIN,password}).toString()});
+  try {
+    const accepted=await POST(request());
+    assert.equal(accepted.status,303);
+    assert.equal(accepted.headers.get('location'),origin+'/');
+    assert.ok(accepted.cookies.get(auth.SESSION_COOKIE));
+    assert.equal((await POST(request('https://evil.example'))).status,403);
+    assert.equal((await POST(request(origin,'evil.example'))).status,403);
+    assert.equal(trustedRequestOrigin(request('http://dashboard.example.test')),null);
+    process.env.APP_ORIGIN='https://pinned.example.test';
+    assert.equal(trustedRequestOrigin(request()),null);
+    delete process.env.APP_ORIGIN;
+    process.env.NODE_ENV='development';
+    assert.equal(trustedRequestOrigin(request()),null);
+  } finally {
+    if(previousMode===undefined)delete process.env.NODE_ENV;else process.env.NODE_ENV=previousMode;
+    delete process.env.APP_ORIGIN;
+  }
+});

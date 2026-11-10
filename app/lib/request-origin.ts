@@ -38,6 +38,11 @@ export function trustedRequestOrigin(request: NextRequest): string | null {
     if (localTarget && request.headers.get('x-forwarded-host') === publicHost && origin.host === host) return forwardedOrigin;
   }
   if (localRequest) {
+    // A production reverse proxy terminates HTTPS and preserves the public Host,
+    // while next start constructs its internal URL from the loopback bind address.
+    // Compare the browser Origin to that actual Host, never to forwarded headers.
+    if (process.env.NODE_ENV === 'production' && !localHosts.includes(host) &&
+        origin.protocol === 'https:' && origin.host === host) return supplied;
     return localHosts.includes(host) && supplied === `${request.nextUrl.protocol}//${host}` ? supplied : null;
   }
   // Preserve direct production same-origin requests, but do not accept unrelated Codespaces hosts.

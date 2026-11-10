@@ -1,0 +1,11 @@
+{
+  "productionBuild": true,
+  "withoutDatabase": true,
+  "timewebPublicHostOrigin": true,
+  "jsonLoginStatus": 200,
+  "nativeFormStatus": 303,
+  "nativeRedirectToPublicHttps": true,
+  "foreignOriginDenied": true,
+  "forwardedHostSpoofDenied": true,
+  "passwordsOrProductionSettingsChanged": false
+}
