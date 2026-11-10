@@ -3,6 +3,7 @@ import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { SESSION_COOKIE, verifySession } from '@/app/lib/auth';
 import LoginForm from './login-form';
+import './login.css';
 export default async function LoginPage({ searchParams }: { searchParams: Promise<{ error?: string }> }) {
   if (verifySession((await cookies()).get(SESSION_COOKIE)?.value)) redirect('/');
   const initialError = (await searchParams).error === 'auth' ? 'Не удалось войти. Проверьте логин и пароль и повторите попытку.' : '';
