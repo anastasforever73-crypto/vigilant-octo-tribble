@@ -1,49 +1,600 @@
-"use client";
-import {useMemo,useState} from "react";
-import type martSnapshot from "./demo-data.json";
-type DashboardSnapshot = typeof martSnapshot;
-import {AlertTriangle,ArrowDownRight,ArrowUpRight,Banknote,Boxes,CalendarDays,ChevronLeft,ChevronRight,CircleDollarSign,Download,Filter,Info,LayoutDashboard,PackageCheck,RefreshCw,Search,Settings2,Truck,Type,Users,WalletCards,X} from "lucide-react";
-import {Area,AreaChart,Bar,BarChart,CartesianGrid,Cell,ComposedChart,Line,Pie,PieChart,ResponsiveContainer,Tooltip,XAxis,YAxis} from "recharts";
-type Tab="overview"|"goods"|"cash"|"logistics"|"sales"; type Tone="good"|"warn"|"bad";
-const monthly=[{m:"Мар",revenue:18.2,profit:4.1,plan:19,inc:17.4,out:15.8},{m:"Апр",revenue:19.7,profit:4.5,plan:20,inc:20.1,out:18.6},{m:"Май",revenue:21.4,profit:5.2,plan:21,inc:20.8,out:19.1},{m:"Июн",revenue:20.8,profit:4.8,plan:22,inc:22.2,out:21.4},{m:"Июл",revenue:23.1,profit:5.6,plan:23,inc:22.9,out:21.6},{m:"Авг",revenue:22.6,profit:5.1,plan:24.5,inc:21.8,out:23}];
-const tabs=[{id:"overview" as Tab,label:"Оперативный дашборд",icon:LayoutDashboard},{id:"goods" as Tab,label:"Управление товаром",icon:Boxes},{id:"cash" as Tab,label:"ДДС",icon:WalletCards},{id:"logistics" as Tab,label:"Логистика",icon:Truck},{id:"sales" as Tab,label:"Продажи по менеджерам",icon:Users}];
-const kpis=[
- ["Остаток денежных средств","12,7 млн ₽","+4,2%","доступно на счетах","good",Banknote],
- ["Поступления","21,8 млн ₽","+1,6%","план 22,4 млн ₽","good",ArrowUpRight],
- ["Выплаты","23,0 млн ₽","+7,4%","выше плана на 1,1 млн ₽","warn",ArrowDownRight],
- ["Чистый денежный поток","−1,2 млн ₽","−1,8 млн ₽","денег достаточно на 19 дней","warn",CircleDollarSign],
- ["Выручка","22,6 млн ₽","+9,1%","92% от плана","warn",ArrowUpRight],
- ["Валовая прибыль","5,1 млн ₽","+6,3%","маржа 22,6%","good",CircleDollarSign],
- ["Стоимость остатков","31,4 млн ₽","+11,8%","3,8 млн ₽ без движения","warn",Boxes],
- ["Дебиторская задолженность","14,8 млн ₽","+8,7%","просрочено 3,2 млн ₽","bad",WalletCards],
- ["Кредиторская задолженность","11,3 млн ₽","−3,1%","заводу — 7,6 млн ₽","good",Banknote],
- ["Выполнение плана продаж","92,2%","−7,8 п.п.","до плана 1,9 млн ₽","warn",Users]
-] as const;
-const alerts=[ ["Просроченная дебиторка выше лимита","3,2 млн ₽","Лимит 2,5 млн ₽ · 6 клиентов","bad"],["Риск дефицита цемента М500","4 дня","Минимальный запас — 7 дней","bad"],["Задержаны 4 доставки","до 3 дней","ЦФО · ТрансЛайн и Вектор","bad"],["План продаж пока не выполнен","92,2%","До конца периода — 3 дня","warn"]] as const;
-const stock=[{group:"Сухие смеси",value:9.8,fill:"#167D74"},{group:"Цемент",value:7.1,fill:"#45A79D"},{group:"Кирпич",value:6.4,fill:"#8CCAC4"},{group:"Утеплитель",value:4.8,fill:"#D59A39"},{group:"Прочее",value:3.3,fill:"#B7CBC7"}];
-const Pill=({tone="good",children}:{tone?:Tone,children:React.ReactNode})=><span className={`pill ${tone}`}>{children}</span>;
-function Panel({title,sub,children}:{title:string,sub?:string,children:React.ReactNode}){return <section className="panel"><div className="panel-head"><div><h3>{title}</h3>{sub&&<p>{sub}</p>}</div><Info size={15}/></div>{children}</section>}
-type KpiRow=readonly [string,string,string,string,Tone,any];
-function Kpi({x,open}:{x:KpiRow,open:(s:string)=>void}){const I=x[5];return <button className={`kpi ${x[4]}`} onClick={()=>open(x[0])}><div className="kpi-head"><span>{x[0]}</span><I size={17}/></div><strong>{x[1]}</strong><div className="kpi-foot"><b>{x[2]}</b><span>{x[3]}</span></div></button>}
-const Tip=({active,payload,label}:any)=>active&&payload?.length?<div className="tip"><b>{label}</b>{payload.map((p:any)=><span key={p.dataKey} style={{color:p.color}}>{p.name}: {p.value} млн ₽</span>)}</div>:null;
-function Table({title,heads,rows}:{title:string,heads:string[],rows:string[][]}){const[q,setQ]=useState("");const shown=rows.filter(r=>r.join(" ").toLowerCase().includes(q.toLowerCase()));return <Panel title={title} sub={`${shown.length} строк в текущем представлении`}><div className="tools"><label><Search size={14}/><input placeholder="Поиск по таблице" value={q} onChange={e=>setQ(e.target.value)}/></label><button><Download size={14}/>Выгрузить</button></div><div className="scroll"><table><thead><tr>{heads.map(h=><th key={h}>{h}</th>)}</tr></thead><tbody>{shown.map((r,i)=><tr key={i}>{r.map((c,j)=><td key={j}>{j===r.length-1?<Pill tone={/разрыв|риск|задерж|дефицит|неликвид/i.test(c)?"bad":/внимание|избыток|пути/i.test(c)?"warn":"good"}>{c}</Pill>:c}</td>)}</tr>)}</tbody></table></div></Panel>}
-function Heading({eye,title,status,tone="warn"}:{eye:string,title:string,status?:string,tone?:Tone}){return <div className="heading"><div><span>{eye}</span><h2>{title}</h2></div>{status&&<Pill tone={tone}>{status}</Pill>}</div>}
-function Mini({data}:{data:string[][]}){return <div className="mini-grid">{data.map((x,i)=><div className="mini" key={x[0]}><span>{x[0]}</span><b>{x[1]}</b><small className={/просроч|выше|\+12|−/.test(x[2]||"")?"attention":""}>{x[2]}</small></div>)}</div>}
-function Overview({open,live}:{open:(s:string)=>void,live:any}){return <><div className="source-note"><RefreshCw size={16}/><span><b>Фактические данные из файла</b><small>{live.rows} операций и заказов попали в выбранный период</small></span></div><Heading eye="Ключевые показатели" title="Состояние компании"/><div className="kpi-grid">{live.kpis.map((x:KpiRow)=><Kpi key={x[0]} x={x} open={open}/>)}</div><div className="split"><Panel title="Выручка по дням" sub="по данным заказов, млн ₽"><ResponsiveContainer width="100%" height={250}><ComposedChart data={live.chart}><CartesianGrid stroke="#E4EEEC" vertical={false}/><XAxis dataKey="m" axisLine={false} tickLine={false}/><YAxis axisLine={false} tickLine={false}/><Tooltip content={<Tip/>}/><Bar dataKey="revenue" name="Выручка" fill="#167D74" radius={[4,4,0,0]}/><Line dataKey="inc" name="Поступления" stroke="#D59A39" strokeWidth={3}/></ComposedChart></ResponsiveContainer></Panel><Panel title="Требует внимания" sub={`${live.alerts.length} активных сигнала`}><div className="alerts">{live.alerts.map((a:any)=><button className={`alert ${a[3]}`} key={a[0]} onClick={()=>open(a[0])}><AlertTriangle size={15}/><span><b>{a[0]}</b><small>{a[2]}</small></span><strong>{a[1]}</strong></button>)}</div></Panel></div><div className="split equal"><Panel title="Движение денег" sub="поступления и выплаты, млн ₽"><ResponsiveContainer width="100%" height={220}><AreaChart data={live.chart}><CartesianGrid stroke="#E4EEEC" vertical={false}/><XAxis dataKey="m" axisLine={false} tickLine={false}/><YAxis axisLine={false} tickLine={false}/><Tooltip content={<Tip/>}/><Area dataKey="inc" name="Поступления" stroke="#167D74" fill="#DFF1EE"/><Line dataKey="out" name="Выплаты" stroke="#C7544C" strokeWidth={2}/></AreaChart></ResponsiveContainer></Panel><Panel title="Продажи по менеджерам" sub="выручка за выбранный период"><div className="manager-live">{live.managers.map((x:any)=><div key={x.name}><span>{x.name}</span><b>{x.value}</b></div>)}</div></Panel></div></>}
-const goods=[["Основной склад","Цемент М500","Цемент","т","84","7 920 ₽","665 280 ₽","3","Дефицит"],["Северный","Штукатурка ГипсПро","Сухие смеси","меш.","1 240","438 ₽","543 120 ₽","18","Норма"],["Основной склад","Утеплитель 50 мм","Утеплитель","упак.","680","1 860 ₽","1 264 800 ₽","76","Избыток"],["Южный","Кирпич М150","Кирпич","шт.","42 600","19 ₽","809 400 ₽","14","Норма"],["Северный","Клей плиточный","Сухие смеси","меш.","320","362 ₽","115 840 ₽","104","Неликвид"]];
-function Goods(){return <><Heading eye="Закупки · продажи · остатки" title="Управление товаром" status="7 позиций требуют внимания"/><Mini data={[["Остатки по себестоимости","31,4 млн ₽","+11,8%"],["Закупки","18,7 млн ₽","96% плана"],["Продажи","22,6 млн ₽","+9,1%"],["Оборачиваемость","4,7 раза","−0,3"],["Неликвидные запасы","3,8 млн ₽","12,1%"]]}/><div className="split"><Panel title="Стоимость запасов по группам" sub="млн ₽"><ResponsiveContainer width="100%" height={250}><BarChart data={stock} layout="vertical"><CartesianGrid stroke="#E4EEEC" horizontal={false}/><XAxis type="number" axisLine={false}/><YAxis dataKey="group" type="category" width={95} axisLine={false}/><Tooltip/><Bar dataKey="value" fill="#167D74" radius={[0,4,4,0]}/></BarChart></ResponsiveContainer></Panel><Panel title="Товарный баланс" sub="контроль движений за период"><div className="balance"><div><span>На начало</span><b>28,1 млн ₽</b></div><em>+</em><div><span>Поступления</span><b>18,2 млн ₽</b></div><em>−</em><div><span>Продажи</span><b>14,9 млн ₽</b></div><em>=</em><div className="result"><span>На конец</span><b>31,4 млн ₽</b></div></div><div className="check"><PackageCheck/><span><b>Баланс сходится</b><small>Расхождение менее 0,01%</small></span></div></Panel></div><Table title="Остатки по складам" heads={["Склад","Товар","Группа","Ед.","Количество","Себестоимость","Стоимость","Без движения","Статус"]} rows={goods}/></>}
-const cal=[["28 авг","12,7 млн ₽","1,4 млн ₽","2,1 млн ₽","0,3 млн ₽","11,7 млн ₽","Норма"],["29 авг","11,7 млн ₽","0,8 млн ₽","3,2 млн ₽","0,6 млн ₽","8,7 млн ₽","Норма"],["30 авг","8,7 млн ₽","0,5 млн ₽","5,9 млн ₽","0,4 млн ₽","2,9 млн ₽","Внимание"],["31 авг","2,9 млн ₽","1,1 млн ₽","4,7 млн ₽","0,2 млн ₽","−0,9 млн ₽","Разрыв"]];
-function Cash(){return <><Heading eye="Факт и прогноз" title="Движение денежных средств" status="Риск разрыва 31 августа" tone="bad"/><Mini data={[["Остаток на начало","13,9 млн ₽",""],["Поступления","21,8 млн ₽","97% плана"],["Выплаты","23,0 млн ₽","+1,1 млн ₽ к плану"],["Чистый поток","−1,2 млн ₽",""],["Свободный остаток","4,6 млн ₽","после обязательств"]]}/><div className="split equal"><Panel title="Прогноз остатка" sub="обязательные платежи учтены"><ResponsiveContainer width="100%" height={245}><AreaChart data={[{d:"28",v:12.7},{d:"29",v:8.7},{d:"30",v:2.9},{d:"31",v:-.9},{d:"1 сен",v:3.4}]}><CartesianGrid stroke="#E4EEEC" vertical={false}/><XAxis dataKey="d"/><YAxis/><Tooltip/><Area dataKey="v" stroke="#167D74" fill="#DFF1EE" strokeWidth={3}/></AreaChart></ResponsiveContainer></Panel><Panel title="Деньги по источникам" sub="12,7 млн ₽ доступно"><div className="bars">{[["Расчётные счета","10,4 млн ₽",82],["Кошелёк и наличные","1,8 млн ₽",14],["Прочие счета","0,5 млн ₽",4]].map(x=><div key={x[0] as string}><span><b>{x[0]}</b><strong>{x[1]}</strong></span><i><em style={{width:`${x[2]}%`}}/></i></div>)}</div><p className="hint">Внутренние переводы между счетами исключены из оборота.</p></Panel></div><Table title="Платёжный календарь" heads={["Дата","На начало","Поступления","Обязательные выплаты","Другие выплаты","На конец","Статус"]} rows={cal}/></>}
-const deliveries=[["МТ-2841","СтройАльянс","Москва","ТрансЛайн","27 авг","29 авг","18,4 т","96 400 ₽","+2 дня","Задержана"],["МТ-2847","База №7","Тула","Вектор","28 авг","—","12,1 т","71 800 ₽","в пути","В пути"],["МТ-2852","ДомКомплект","Калуга","ТрансЛайн","28 авг","28 авг","21,6 т","102 300 ₽","0 дней","Вовремя"],["МТ-2854","ПроектСтрой","Москва","АвтоПрофи","29 авг","—","8,3 т","54 200 ₽","—","Запланирована"]];
-function Logistics(){return <><Heading eye="Сроки · стоимость · качество" title="Логистика" status="4 доставки задержаны" tone="bad"/><Mini data={[["Доставки","148","132 завершено"],["Доставлено вовремя","91,7%","план 95%"],["Стоимость логистики","1,86 млн ₽","+12,4%"],["Стоимость на тонну","4 920 ₽","+6,8%"],["Доля в выручке","8,2%","норма до 8%"]]}/><div className="split equal"><Panel title="Стоимость логистики" sub="план и факт, тыс. ₽"><ResponsiveContainer width="100%" height={245}><BarChart data={[{w:"1 нед",p:410,f:398},{w:"2 нед",p:420,f:451},{w:"3 нед",p:430,f:476},{w:"4 нед",p:440,f:535}]}><CartesianGrid stroke="#E4EEEC" vertical={false}/><XAxis dataKey="w"/><YAxis/><Tooltip/><Bar dataKey="p" fill="#B7CBC7"/><Bar dataKey="f" fill="#167D74"/></BarChart></ResponsiveContainer></Panel><Panel title="Причины задержек" sub="12 задержек за период"><div className="bars reasons">{[["Очередь на погрузке","5 случаев",42],["Поломка транспорта","3 случая",25],["Перенос клиентом","2 случая",17],["Документы","2 случая",16]].map(x=><div key={x[0] as string}><span><b>{x[0]}</b><strong>{x[1]}</strong></span><i><em style={{width:`${x[2]}%`}}/></i></div>)}</div></Panel></div><Table title="Доставки" heads={["Заказ","Клиент","Регион","Перевозчик","План","Факт","Вес","Стоимость","Отклонение","Статус"]} rows={deliveries}/></>}
-const managers=[["Анна Соколова","5,2 млн ₽","5,6 млн ₽","107,7%","1,42 млн ₽","25,4%","38","147 тыс. ₽","0,18 млн ₽","Лидер"],["Михаил Орлов","4,8 млн ₽","4,7 млн ₽","97,9%","1,06 млн ₽","22,6%","34","138 тыс. ₽","0,42 млн ₽","Норма"],["Елена Ким","4,5 млн ₽","4,1 млн ₽","91,1%","0,91 млн ₽","22,2%","29","141 тыс. ₽","0,76 млн ₽","Внимание"],["Дмитрий Волков","4,3 млн ₽","3,6 млн ₽","83,7%","0,72 млн ₽","20,0%","27","133 тыс. ₽","1,24 млн ₽","Риск"],["Ирина Белова","3,7 млн ₽","4,6 млн ₽","124,3%","0,99 млн ₽","21,5%","32","144 тыс. ₽","0,60 млн ₽","Лидер"]];
-function Sales(){return <><Heading eye="Команда продаж" title="Продажи по менеджерам"/><Mini data={[["План продаж","24,5 млн ₽",""],["Выручка","22,6 млн ₽","92,2% плана"],["Валовая прибыль","5,1 млн ₽","22,6%"],["Средний чек","141 тыс. ₽","+4,8%"],["Просроченная дебиторка","3,2 млн ₽","14,2% выручки"]]}/><div className="split"><Panel title="Выполнение плана" sub="по менеджерам"><ResponsiveContainer width="100%" height={245}><BarChart data={managers.map(r=>({n:r[0].split(" ")[0],v:parseFloat(r[3])}))}><CartesianGrid stroke="#E4EEEC" vertical={false}/><XAxis dataKey="n"/><YAxis domain={[0,140]}/><Tooltip/><Bar dataKey="v">{managers.map(r=><Cell key={r[0]} fill={parseFloat(r[3])>=100?"#167D74":parseFloat(r[3])<90?"#C7544C":"#D59A39"}/>)}</Bar></BarChart></ResponsiveContainer></Panel><Panel title="Состав рейтинга" sub="веса показателей прозрачны"><div className="score">{[["Выполнение плана",30],["Валовая прибыль",25],["Маржинальность",15],["Качество оплат",15],["Клиентская база",10],["Возвраты и скидки",5]].map(x=><p key={x[0] as string}><span>{x[0]}</span><b>{x[1]}%</b></p>)}</div></Panel></div><Table title="Результаты менеджеров" heads={["Менеджер","План","Выручка","Выполнение","Валовая прибыль","Маржа","Заказы","Средний чек","Просрочено","Статус"]} rows={managers}/></>}
-const iso=(d:Date)=>d.toISOString().slice(0,10), parse=(s:string)=>new Date(`${s}T12:00:00`), dayMs=86400000;
-function rangeLabel(start:string,end:string){const f=(x:string)=>parse(x).toLocaleDateString("ru-RU",{day:"2-digit",month:"short",year:"numeric"}).replace(" г.","");return start===end?f(start):`${f(start)} — ${f(end)}`}
-function previousRange(start:string,end:string){const a=parse(start),b=parse(end),days=Math.round((b.getTime()-a.getTime())/dayMs)+1;b.setDate(a.getDate()-1);a.setDate(a.getDate()-days);return [iso(a),iso(b)]}
-function shiftRange(start:string,end:string,step:number){const days=Math.round((parse(end).getTime()-parse(start).getTime())/dayMs)+1,a=parse(start),b=parse(end);a.setDate(a.getDate()+step*days);b.setDate(b.getDate()+step*days);return [iso(a),iso(b)]}
-function DateControl({mode,setMode,start,setStart,end,setEnd,compare,setCompare}:{mode:string,setMode:(x:string)=>void,start:string,setStart:(x:string)=>void,end:string,setEnd:(x:string)=>void,compare:boolean,setCompare:(x:boolean)=>void}){const prev=previousRange(start,end),apply=(m:string)=>{setMode(m);if(m==="day"){setStart("2026-08-28");setEnd("2026-08-28")}if(m==="week"){setStart("2026-08-24");setEnd("2026-08-30")}};return <div className="period-panel"><div className="period-modes"><button className={mode==="day"?"active":""} onClick={()=>apply("day")}>День</button><button className={mode==="week"?"active":""} onClick={()=>apply("week")}>Неделя</button><button className={mode==="range"?"active":""} onClick={()=>setMode("range")}>Диапазон</button></div><button className="period-arrow" onClick={()=>{const r=shiftRange(start,end,-1);setStart(r[0]);setEnd(r[1])}}><ChevronLeft size={18}/></button><div className="dates"><CalendarDays size={18}/><label><small>С</small><input type="date" value={start} onChange={e=>{setStart(e.target.value);setMode("range")}}/></label><span>—</span><label><small>По</small><input type="date" value={end} min={start} onChange={e=>{setEnd(e.target.value);setMode("range")}}/></label></div><button className="period-arrow" onClick={()=>{const r=shiftRange(start,end,1);setStart(r[0]);setEnd(r[1])}}><ChevronRight size={18}/></button><label className="compare"><input type="checkbox" checked={compare} onChange={e=>setCompare(e.target.checked)}/><span><b>Сравнить</b><small>{rangeLabel(prev[0],prev[1])}</small></span></label></div>}
-const rub=(v:number)=>new Intl.NumberFormat("ru-RU",{maximumFractionDigits:0}).format(v)+" ₽";
-const shortRub=(v:number)=>Math.abs(v)>=1000000?(v/1000000).toLocaleString("ru-RU",{maximumFractionDigits:1})+" млн ₽":rub(v);
-function buildLive(start:string,end:string,martData:DashboardSnapshot){const prev=previousRange(start,end),inRange=(d:string,a:string,b:string)=>d>=a&&d<=b,curCash=martData.cash.filter(x=>inRange(x.date,start,end)),oldCash=martData.cash.filter(x=>inRange(x.date,prev[0],prev[1])),curOrders=martData.orders.filter(x=>inRange(x.date,start,end)),oldOrders=martData.orders.filter(x=>inRange(x.date,prev[0],prev[1])),sum=(arr:any[],key:string)=>arr.reduce((s,x)=>s+(Number(x[key])||0),0),incoming=(a:any[])=>a.filter(x=>x.amount>0).reduce((s,x)=>s+x.amount,0),outgoing=(a:any[])=>Math.abs(a.filter(x=>x.amount<0).reduce((s,x)=>s+x.amount,0)),inc=incoming(curCash),out=outgoing(curCash),net=inc-out,revenue=sum(curOrders,"revenue"),oldRevenue=sum(oldOrders,"revenue"),orders=new Set(curOrders.map(x=>x.order).filter(Boolean)).size,oldOrdersCount=new Set(oldOrders.map(x=>x.order).filter(Boolean)).size,debt=sum(curOrders,"debt"),volume=sum(curOrders,"volume"),delta=(a:number,b:number)=>b?`${a>=b?"+":""}${((a/b-1)*100).toLocaleString("ru-RU",{maximumFractionDigits:1})}%`:"нет базы",tone=(a:number,b:number):Tone=>a>=b?"good":"warn",byDay=new Map<string,any>(),byManager=new Map<string,number>();for(const x of curCash){const d=byDay.get(x.date)||{m:x.date.slice(5).split("-").reverse().join("."),revenue:0,inc:0,out:0};x.amount>=0?d.inc+=x.amount/1e6:d.out+=Math.abs(x.amount)/1e6;byDay.set(x.date,d)}for(const x of curOrders){const d=byDay.get(x.date)||{m:x.date.slice(5).split("-").reverse().join("."),revenue:0,inc:0,out:0};d.revenue+=x.revenue/1e6;byDay.set(x.date,d);byManager.set(x.manager,(byManager.get(x.manager)||0)+x.revenue)}const managers=[...byManager].sort((a,b)=>b[1]-a[1]).slice(0,6).map(([name,value])=>({name,value:shortRub(value)})),kpis:KpiRow[]=[["Поступления",shortRub(inc),delta(inc,incoming(oldCash)),"по операциям ДДС",tone(inc,incoming(oldCash)),ArrowUpRight],["Выплаты",shortRub(out),delta(out,outgoing(oldCash)),"по операциям ДДС",out<=outgoing(oldCash)?"good":"warn",ArrowDownRight],["Чистый денежный поток",shortRub(net),shortRub(net-(incoming(oldCash)-outgoing(oldCash))),"поступления минус выплаты",net>=0?"good":"bad",CircleDollarSign],["Выручка по заказам",shortRub(revenue),delta(revenue,oldRevenue),`${orders} заказов`,tone(revenue,oldRevenue),CircleDollarSign],["Средний чек",orders?shortRub(revenue/orders):"Нет данных",delta(orders?revenue/orders:0,oldOrdersCount?oldRevenue/oldOrdersCount:0),"по уникальным заказам",tone(revenue/(orders||1),oldRevenue/(oldOrdersCount||1)),Banknote],["Объём продаж",volume.toLocaleString("ru-RU",{maximumFractionDigits:1})+" м³",delta(volume,sum(oldOrders,"volume")),"по строкам заказов",tone(volume,sum(oldOrders,"volume")),Boxes],["Долг по заказам периода",shortRub(debt),"на конец строк","не равен общей дебиторке",debt>0?"warn":"good",WalletCards],["Общая дебиторка",shortRub(martData.debtor.total||0),`на ${martData.debtor.date||"—"}`,"расчётный лист книги","warn",WalletCards],["Кредиторка перед заводом",shortRub(martData.creditor.factory||0),`+${shortRub(martData.creditor.change||0)}`,`на ${martData.creditor.date||"—"}`,"bad",Banknote],["Валовая прибыль","Нет данных","—","нет надёжной себестоимости","warn",CircleDollarSign]],alerts:any[]=[];if(net<0)alerts.push(["Отрицательный денежный поток",shortRub(net),"Выплаты превышают поступления","bad"]);if((martData.creditor.change||0)>0)alerts.push(["Рост долга перед заводом",shortRub(martData.creditor.change),`Общий долг ${shortRub(martData.creditor.factory)}`,"bad"]);if(debt>0)alerts.push(["Не оплачены заказы периода",shortRub(debt),`${curOrders.filter(x=>x.debt>0).length} строк с остатком долга`,"warn"]);if(!curCash.length)alerts.push(["Нет операций ДДС","0 строк","Проверьте выбранный период","warn"]);return{kpis,alerts,chart:[...byDay.values()].sort((a,b)=>a.m.localeCompare(b.m)),managers,rows:curCash.length+curOrders.length}}
-export default function Home({data:martData}:{data:DashboardSnapshot}){const[tab,setTab]=useState<Tab>("overview"),[filters,setFilters]=useState(false),[detail,setDetail]=useState<string|null>(null),[mode,setMode]=useState("week"),[start,setStart]=useState("2026-08-24"),[end,setEnd]=useState("2026-08-30"),[compare,setCompare]=useState(true),[font,setFont]=useState("large");const prev=previousRange(start,end),live=useMemo(() => buildLive(start,end,martData),[start,end,martData]);return <main className={`shell font-${font}`}><div className="workspace"><div className="demo-banner" role="note">ДЕМО — все названия и суммы вымышлены. Реальные источники не подключены.</div><header><div><p>МАРТ-ТРЕЙД <span>Управленческая аналитика</span></p><h1>{tabs.find(t=>t.id===tab)?.label}</h1></div><div className="head-actions"><div className="font-control" title="Размер шрифта"><Type size={16}/>{["normal","large","xlarge"].map(x=><button key={x} className={font===x?"active":""} onClick={()=>setFont(x)}>A</button>)}</div><button className={filters?"active":""} onClick={()=>setFilters(!filters)}><Filter size={17}/>Фильтры</button></div></header><DateControl mode={mode} setMode={setMode} start={start} setStart={setStart} end={end} setEnd={setEnd} compare={compare} setCompare={setCompare}/><div className="period-summary"><b>{rangeLabel(start,end)}</b>{compare&&<span>сравнивается с {rangeLabel(prev[0],prev[1])}</span>}</div>{filters&&<div className="filterbar">{["Все юрлица","Все склады","Все товарные группы","Все менеджеры","Все регионы"].map(x=><select key={x}><option>{x}</option></select>)}<button onClick={()=>setFilters(false)}><X size={18}/></button></div>}<div className="content">{tab==="overview"&&<Overview open={setDetail} live={live}/>} {tab==="goods"&&<Goods/>}{tab==="cash"&&<Cash/>}{tab==="logistics"&&<Logistics/>}{tab==="sales"&&<Sales/>}</div></div><aside><div className="brand"><b>МТ</b><span><strong>Март-Трейд</strong><small>ДЕМО · август 2026</small></span></div><nav>{tabs.map(t=>{const I=t.icon;return <button className={tab===t.id?"active":""} onClick={()=>setTab(t.id)} key={t.id}><I size={20}/>{t.label}{t.id==="overview"&&<i>4</i>}</button>})}</nav><div className="nav-bottom"><button><Settings2 size={19}/>Источники данных</button><p><i/><span><b>Демонстрационные данные</b><small>Вымышленный набор для проверки</small></span></p></div></aside>{detail&&<div className="modal" onClick={()=>setDetail(null)}><article onClick={e=>e.stopPropagation()}><button className="close" onClick={()=>setDetail(null)}><X/></button><span className="eye">Детализация показателя</span><h2>{detail}</h2><p>Данные рассчитаны за {rangeLabel(start,end)}{compare?` и сравнены с ${rangeLabel(prev[0],prev[1])}`:""}. Применены все активные фильтры.</p><div className="detail-grid"><div><span>Текущее значение</span><b>{live.kpis.find((k:KpiRow)=>k[0]===detail)?.[1]||"Требует действия"}</b></div><div><span>Обновлено</span><b>28.08.2026, 09:42</b></div></div><h3>Как рассчитано</h3><p>Показатель собран из детальных операций после очистки, исключения дублей и внутренних перемещений.</p><button className="primary" onClick={()=>setDetail(null)}>Перейти к строкам</button></article></div>}</main>}
+'use client';
+import WalletPercentageSettings from './wallet-percentage-settings';
+import { DashboardQueryCache, neighbourMonths } from './lib/dashboard-query-cache';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import type { DashboardData, SourceStatus } from './lib/dashboard-data';
+import type { Role } from './lib/auth';
+import { buildLive, rub, shortRub, type LiveData } from './lib/live-data';
+import ExcelExportButton from './excel-export-button';
+import type { ReportSection } from './lib/excel-report';
+import ArchivePanel from './archive-panel';
+import SourcesPanel from './sources-panel';
+import ReceivablesPanel from './receivables-panel';
+import NlpkPayablesPanel from './nlpk-payables-panel';
+import ReferenceMetric from './reference-metric';
+import type { PlanningSummary } from './lib/planning-indicators';
+import PlanningPanel from './planning-panel';
+import OpiuPanel from './opiu-panel';
+import InfoTip from './info-tip';
+import OperationalPanel from './operational-panel';
+import UsersPanel from './users-panel';
+import { allSections, canView } from './lib/user-access';
+import type { Section } from './lib/connections/model';
+import { sectionData } from './lib/connections/compose';
+import { ArrowUpRight, Banknote, Boxes, CalendarDays, ChevronDown, ChevronLeft, ChevronRight, Download, Filter, Info, LayoutDashboard, Menu, Search, Settings2, Truck, Type, Users, WalletCards, X, type LucideIcon } from 'lucide-react';
+import { Area, AreaChart, CartesianGrid, Cell, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+export type Tab = "movements" | "salary" | "projects" | "plan" | "overview" | "goods" | "cash" | "logistics" | "sales" | "debt" | "opiu" | "balance" | "settings" | "users";
+type Tone = "good" | "warn" | "bad";
+const groups = [
+  { label: "Оперативные", ids: ["overview", "movements", "salary", "debt"] },
+  { label: "Аналитические", ids: ["cash", "projects", "opiu", "balance", "sales"] },
+  { label: "План", ids: ["plan"] },
+  { label: "Товары и логистика", ids: ["goods", "logistics"] },
+  { label: "Администрирование", ids: ["settings", "users"] },
+];
+const tabs = [
+  { id: 'movements' as Tab, label: 'Поступления и выплаты', icon: Banknote },
+  { id: 'salary' as Tab, label: 'Заработная плата', icon: Users },
+  { id: 'projects' as Tab, label: 'Потоки по проектам', icon: Filter },
+  { id: 'plan' as Tab, label: 'Планирование', icon: CalendarDays },
+  {
+    id: "overview" as Tab,
+    label: "Остатки и резервы",
+    icon: LayoutDashboard,
+  },
+  { id: "cash" as Tab, label: "Деньги", icon: WalletCards },
+  { id: "sales" as Tab, label: "Продажи по менеджерам", icon: Users },
+  { id: "goods" as Tab, label: "Управление товаром", icon: Boxes },
+  { id: "logistics" as Tab, label: "Логистика", icon: Truck },
+  { id: "debt" as Tab, label: "Дебиторская задолженность", icon: Banknote },
+  { id: "opiu" as Tab, label: "Прибыль и фонды", icon: Filter },
+  { id: "balance" as Tab, label: "Баланс", icon: Banknote },
+  { id: "settings" as Tab, label: "Источники и архив", icon: Settings2 },
+  { id: "users" as Tab, label: "Пользователи", icon: Users },
+];
+const Pill = ({
+  tone = "good",
+  children,
+}: {
+  tone?: Tone;
+  children: React.ReactNode;
+}) => <span className={`pill ${tone}`}>{children}</span>;
+function Panel({
+  title,
+  sub,
+  note,
+  children,
+}: {
+  title: string;
+  sub?: string;
+  note?: React.ReactNode;
+  children: React.ReactNode;
+}) {
+  return (
+    <section className="panel">
+      <div className="panel-head">
+        <div>
+          <h3>{title}{note && <InfoTip>{note}</InfoTip>}</h3>
+          {sub && <p>{sub}</p>}
+        </div>
+        <Info size={15} />
+      </div>
+      {children}
+    </section>
+  );
+}
+type KpiRow = readonly [string, string, string, string, Tone, LucideIcon];
+function Kpi({ x, open }: { x: KpiRow; open: (s: string) => void }) {
+  const I = x[5];
+  return (
+    <button className={`kpi ${x[4]}`} onClick={() => open(x[0])}>
+      <div className="kpi-head">
+        <span>{x[0]}</span>
+        <I size={17} />
+      </div>
+      <strong>{x[1]}</strong>
+      <div className="kpi-foot">
+        <b>{x[2]}</b>
+        <span>{x[3]}</span>
+      </div>
+    </button>
+  );
+}
+const Tip = ({ active, payload, label }: { active?: boolean; payload?: readonly { dataKey?: string | number; color?: string; name?: string; value?: string | number }[]; label?: string | number }) =>
+  active && payload?.length ? (
+    <div className="tip">
+      <b>{label}</b>
+      {payload.map((p) => (
+        <span key={p.dataKey} style={{ color: p.color }}>
+          {p.name}: {p.value} млн ₽
+        </span>
+      ))}
+    </div>
+  ) : null;
+function Table({
+  title,
+  heads,
+  rows,
+}: {
+  title: string;
+  heads: string[];
+  rows: string[][];
+}) {
+  const [q, setQ] = useState("");
+  const shown = rows.filter((r) =>
+    r.join(" ").toLowerCase().includes(q.toLowerCase()),
+  );
+  return (
+    <Panel title={title} sub={`${shown.length} строк в текущем представлении`}>
+      <div className="tools">
+        <label>
+          <Search size={14} />
+          <input
+            placeholder="Поиск по таблице"
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+          />
+        </label>
+        <button>
+          <Download size={14} />
+          Выгрузить
+        </button>
+      </div>
+      <div className="scroll">
+        <table>
+          <thead>
+            <tr>
+              {heads.map((h) => (
+                <th key={h}>{h}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {shown.map((r, i) => (
+              <tr key={i}>
+                {r.map((c, j) => (
+                  <td key={j}>
+                    {j === r.length - 1 ? (
+                      <Pill
+                        tone={
+                          /разрыв|риск|задерж|дефицит|неликвид/i.test(c)
+                            ? "bad"
+                            : /внимание|избыток|пути/i.test(c)
+                              ? "warn"
+                              : "good"
+                        }
+                      >
+                        {c}
+                      </Pill>
+                    ) : (
+                      c
+                    )}
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </Panel>
+  );
+}
+function Heading({
+  eye,
+  title,
+  status,
+  tone = "warn",
+}: {
+  eye: string;
+  title: string;
+  status?: string;
+  tone?: Tone;
+}) {
+  return (
+    <div className="heading">
+      <div>
+        <span>{eye}</span>
+        <h2>{title}</h2>
+      </div>
+      {status && <Pill tone={tone}>{status}</Pill>}
+    </div>
+  );
+}
+// Retained for restoring the previous overview; the active tab renders OperationalPanel directly.
+function Overview({ open, live, sources, operational }: { open: (s: string) => void; live: LiveData; sources: Record<string, SourceStatus>; operational?: DashboardData['operational'] }) {
+  const cards = [
+    { name: 'Продажи', value: shortRub(live.revenue), detail: live.revenueDelta },
+    { name: 'Заказов с номером', value: live.hasOrders ? String(live.orderCount) : 'Нет данных', detail: 'Уникальные номера за выбранный период' },
+    { name: 'Менеджеров с продажами', value: live.hasOrders ? String(live.managers.length) : 'Нет данных', detail: 'По подтверждённым строкам заказов' },
+  ];
+  const errors = Object.values(sources).filter(source => source.error);
+  return <>
+    <div className="operational-cards">{cards.map(card => <button key={card.name} onClick={() => open(card.name)}><span>{card.name}<Info size={16}/></span><strong>{card.value}</strong><small>{card.detail}</small></button>)}</div>
+    <OperationalPanel data={operational}/>
+    <Panel title="Состояние деятельности" sub="Показатели за выбранный период">
+      {errors.length ? <p className="attention">Есть ошибки обновления источников. Проверьте их статус перед принятием решений.</p> : <p>{live.hasOrders ? 'Данные заказов доступны за выбранный период.' : 'Нет подтверждённых данных заказов. Требуется подключённый источник продаж.'}</p>}
+      {live.alerts.length > 0 && <p className="attention">Обнаружено финансовое отклонение. Подробности доступны в разделе «ДДС».</p>}
+    </Panel>
+  </>;
+}
+function MoneyMovement({ live, planning }: { live: LiveData; planning?: PlanningSummary }) {
+  const dates = [...new Set([...live.chart.map(r => r.m), ...(planning?.daily || []).map(r => r.date)])].sort();
+  const actual = new Map(live.chart.map(r => [r.m, r]));
+  const planned = new Map((planning?.daily || []).map(r => [r.date, r]));
+  const chart = dates.map(m => ({ m, inc: actual.get(m)?.inc ?? 0, out: actual.get(m)?.out ?? 0, planInc: planning?.receipts == null ? null : (planned.get(m)?.receipts ?? 0) / 1e6, planOut: planning?.payments == null ? null : (planned.get(m)?.payments ?? 0) / 1e6 }));
+  // Presentation grouping only: same negative transaction rows as the existing outgoing metric.
+  const amounts = new Map<string, number>();
+  for (const row of live.transactions) if (row.amount < 0) amounts.set(row.article || 'Статья не указана', (amounts.get(row.article || 'Статья не указана') || 0) - row.amount);
+  const expenses = [...amounts].map(([name, value]) => ({ name, value })).sort((a,b) => b.value-a.value);
+  const colors = ['#19835f', '#389a77', '#6eb49a', '#a1cdb7', '#c9dc8b', '#e4d468', '#77bfc0'];
+  return <>
+    <div className="reference-columns money-charts">
+      <Panel title="Структура выплат" sub="по статьям · за выбранный период">
+        {expenses.length ? <div className="expense-structure"><div className="expense-donut"><ResponsiveContainer width="100%" height={250} minWidth={1}><PieChart><Pie data={expenses} dataKey="value" nameKey="name" innerRadius="68%" outerRadius="88%" paddingAngle={1} isAnimationActive={false}>{expenses.map((row,i) => <Cell key={row.name} fill={colors[i % colors.length]}/>)}</Pie><Tooltip formatter={value => rub(Number(value))}/></PieChart></ResponsiveContainer><div className="pie-total"><b>{shortRub(live.outgoing)}</b><small>Всего выплат</small></div></div><div className="expense-legend">{expenses.map((row,i) => <div key={row.name} style={{ borderLeftColor: colors[i % colors.length] }}><span>{row.name}<small>{rub(row.value)}</small></span><b>{live.outgoing ? (row.value / live.outgoing * 100).toLocaleString('ru-RU', {maximumFractionDigits:1}) : '0'}%</b></div>)}</div></div> : <p className="reference-empty">За выбранный период нет выплат.</p>}
+      </Panel>
+      <Panel title="Динамика поступлений и выплат" sub="Факт и план · млн ₽">
+        {chart.length ? <ResponsiveContainer minWidth={1} minHeight={1} width="100%" height={280}><AreaChart data={chart}><defs><linearGradient id="flowFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#208d68" stopOpacity={0.23}/><stop offset="100%" stopColor="#208d68" stopOpacity={0.015}/></linearGradient></defs><CartesianGrid stroke="#edf1ef" vertical={false}/><XAxis dataKey="m" axisLine={false} tickLine={false} tick={{fontSize:10}} tickFormatter={value => String(value).slice(5).split('-').reverse().join('.')}/><YAxis width={42} axisLine={false} tickLine={false} tick={{fontSize:10}}/><Tooltip content={<Tip/>}/><Area isAnimationActive={false} dataKey="inc" name="Поступления" stroke="#208d68" fill="url(#flowFill)" strokeWidth={2}/><Area isAnimationActive={false} dataKey="out" name="Выплаты" stroke="#bc8a42" fill="transparent" strokeWidth={1.5}/><Area isAnimationActive={false} dataKey="planInc" name="План поступлений" stroke="#7e9389" strokeDasharray="5 4" fill="transparent" strokeWidth={1.5} connectNulls={false}/><Area isAnimationActive={false} dataKey="planOut" name="План списаний" stroke="#d8b278" strokeDasharray="5 4" fill="transparent" strokeWidth={1.5} connectNulls={false}/></AreaChart></ResponsiveContainer> : <p className="reference-empty">Нет операций за выбранный период.</p>}
+        <div className="chart-key"><span><i style={{background:'#208d68'}}/>Поступления</span><span><i style={{background:'#bc8a42'}}/>Выплаты</span><span><i className="chart-plan-key"/>План</span></div>
+      </Panel>
+    </div>
+    <details className="panel account-disclosure"><summary>Структура денежных средств <small>{shortRub(live.balance)}</small></summary>{live.moneySources.length ? <table><tbody>{live.moneySources.map(row => <tr key={row.name}><td>{row.name}</td><td className="numeric">{rub(row.value)}</td></tr>)}</tbody></table> : <p>Нет подтверждённых остатков по счетам.</p>}</details>
+  </>;
+}
+function SourceUnavailable({ title, fields }: { title: string; fields: string }) {
+  return (
+    <>
+      <Heading eye="Источник данных" title={title} status="Нет подтверждённых данных" tone="warn" />
+      <Panel title="Источник не подключён">
+        <p className="hint">
+          В подключённых источниках не найдено поле {fields}. Значения не подставляются, чтобы не смешивать факты с оценками.
+        </p>
+      </Panel>
+    </>
+  );
+}
+function Cash({ live, planning }: { live: LiveData; open: (s: string) => void; planning?: PlanningSummary }) {
+  if (!live.hasCash) return <SourceUnavailable title="Денежные средства" fields="операции ДДС"/>;
+  return (
+    <>
+      <Heading eye="Факт" title="Движение денежных средств" status={live.hasCash ? "Данные источника" : "Источник не подключён"} tone={live.hasCash ? "good" : "warn"} />
+      <div className="reference-metric-grid">
+        <ReferenceMetric title="Поступления" value={live.incoming} plan={planning?.receipts} icon={ArrowUpRight}/>
+        <ReferenceMetric title="Списания" value={live.outgoing} plan={planning?.payments} icon={Download}/>
+        <ReferenceMetric title="Денежный поток" value={live.net} plan={planning?.net} icon={Filter}/>
+        <ReferenceMetric title="Фактический остаток" value={live.balance} icon={WalletCards} note="Остаток по подключённым счетам" tone="amber"/>
+      </div>
+      <MoneyMovement live={live} planning={planning}/>
+      <p className="table-context">Операций за выбранный период: {live.rows}</p><Table title="Детализация движения денег" heads={['Дата', 'Счёт', 'Контрагент', 'Статья', 'Сумма']} rows={live.transactions.slice(0, 500).map(row => [row.date, row.source, row.counterparty, row.article, rub(row.amount)])}/>
+      {live.transactions.length > 500 && <p className="hint">Показаны первые 500 операций. Итоги рассчитаны по всем операциям периода.</p>}
+    </>
+  );
+}
+function Sales({ live }: { live: LiveData }) {
+  const rows = live.managers.map((manager: { name: string; value: string }) => [manager.name, manager.value]);
+  return (
+    <>
+      <Heading eye="Заказы" title="Продажи по менеджерам" status={live.hasOrders ? "Данные источника" : "Источник не подключён"} tone={live.hasOrders ? "good" : "warn"} />
+      <Panel title="Выручка по менеджерам" sub="только строки с заполненным менеджером">
+        {rows.length ? <Table title="Рейтинг менеджеров" heads={["Менеджер", "Выручка"]} rows={rows} /> : <p className="hint">В выбранном периоде нет подтверждённых данных по менеджерам.</p>}
+      </Panel>
+    </>
+  );
+}
+const iso = (d: Date) => d.toISOString().slice(0, 10),
+  parse = (s: string) => new Date(`${s}T12:00:00`),
+  dayMs = 86400000;
+function rangeLabel(start: string, end: string) {
+  const f = (x: string) =>
+    parse(x)
+      .toLocaleDateString("ru-RU", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+      })
+      .replace(" г.", "");
+  return start === end ? f(start) : `${f(start)} — ${f(end)}`;
+}
+function previousRange(start: string, end: string) {
+  const a = parse(start),
+    b = parse(end),
+    days = Math.round((b.getTime() - a.getTime()) / dayMs) + 1;
+  b.setDate(a.getDate() - 1);
+  a.setDate(a.getDate() - days);
+  return [iso(a), iso(b)];
+}
+function shiftRange(start: string, end: string, step: number) {
+  const days =
+      Math.round((parse(end).getTime() - parse(start).getTime()) / dayMs) + 1,
+    a = parse(start),
+    b = parse(end);
+  a.setDate(a.getDate() + step * days);
+  b.setDate(b.getDate() + step * days);
+  return [iso(a), iso(b)];
+}
+function DateControl({
+  mode,
+  setMode,
+  start,
+  setStart,
+  end,
+  setEnd,
+  compare,
+  setCompare,
+}: {
+  mode: string;
+  setMode: (x: string) => void;
+  start: string;
+  setStart: (x: string) => void;
+  end: string;
+  setEnd: (x: string) => void;
+  compare: boolean;
+  setCompare: (x: boolean) => void;
+}) {
+  const prev = previousRange(start, end),
+    apply = (m: string) => {
+      setMode(m);
+      if (m === "day") {
+        setStart(end);
+        setEnd(end);
+      }
+      if (m === "week") {
+        const weekEnd = parse(end);
+        const weekStart = parse(end);
+        weekStart.setDate(weekStart.getDate() - 6);
+        setStart(iso(weekStart));
+        setEnd(iso(weekEnd));
+      }
+    };
+  return (
+    <div className="period-panel">
+      <div className="period-modes">
+        <button
+          className={mode === "day" ? "active" : ""}
+          onClick={() => apply("day")}
+        >
+          День
+        </button>
+        <button
+          className={mode === "week" ? "active" : ""}
+          onClick={() => apply("week")}
+        >
+          Неделя
+        </button>
+        <button
+          className={mode === "range" ? "active" : ""}
+          onClick={() => setMode("range")}
+        >
+          Диапазон
+        </button>
+      </div>
+      <button
+        className="period-arrow"
+        onClick={() => {
+          const r = shiftRange(start, end, -1);
+          setStart(r[0]);
+          setEnd(r[1]);
+        }}
+      >
+        <ChevronLeft size={18} />
+      </button>
+      <div className="dates">
+        <CalendarDays size={18} />
+        <label>
+          <small>С</small>
+          <input
+            type="date"
+            value={start}
+            onChange={(e) => {
+              if (!e.target.value || e.target.value > end) return;
+              setStart(e.target.value);
+              setMode("range");
+            }}
+          />
+        </label>
+        <span>—</span>
+        <label>
+          <small>По</small>
+          <input
+            type="date"
+            value={end}
+            min={start}
+            onChange={(e) => {
+              if (!e.target.value || e.target.value < start) return;
+              setEnd(e.target.value);
+              setMode("range");
+            }}
+          />
+        </label>
+      </div>
+      <button
+        className="period-arrow"
+        onClick={() => {
+          const r = shiftRange(start, end, 1);
+          setStart(r[0]);
+          setEnd(r[1]);
+        }}
+      >
+        <ChevronRight size={18} />
+      </button>
+      <label className="compare">
+        <input
+          type="checkbox"
+          checked={compare}
+          onChange={(e) => setCompare(e.target.checked)}
+        />
+        <span>
+          <b>Сравнить</b>
+          <small>{rangeLabel(prev[0], prev[1])}</small>
+        </span>
+      </label>
+    </div>
+  );
+}
+const emptyData: DashboardData = { source: '', cash: [], orders: [], debtor: {}, creditor: {}, balances: {} };
+const emptySources: Record<string, SourceStatus> = Object.fromEntries([['fintablo', 'Финтабло'], ['googleSheets', 'Google Sheets'], ['debt', 'Таблица задолженности']].map(([key, name]) => [key, { name, configured: false, available: false, status: 'loading', freshness: 'Подключение ещё не проверено' }]));
+function Balance({ data, loading, error }: { data: DashboardData; loading: boolean; error?: string }) {
+  const balance = data.sections?.balance;
+  if (loading) return <Panel title="Загружаем баланс"><p role="status">Проверяем данные за выбранный период.</p></Panel>;
+  if (error || data.sources?.connections?.status === 'storage_unavailable') return <Panel title="Баланс временно недоступен"><p>Не удалось получить данные. Повторите обновление позже.</p></Panel>;
+  if (!balance) return <Panel title="Источник баланса не подключён"><p>Нет подтверждённых данных баланса. Администратор может привязать источник в разделе «Источники данных», выбрав набор «Бухгалтерский баланс» и вкладку «Баланс».</p></Panel>;
+  if (!balance.balanceSheet) return <Panel title="Данные баланса недоступны"><p>Источник привязан, но подтверждённых данных за выбранный период нет. Администратору нужно проверить состояние подключения и синхронизацию.</p></Panel>;
+  if (!balance.balanceSheet.length) return <Panel title="Нет данных на выбранную дату"><p>В подключённом источнике нет строк баланса на дату окончания периода или ранее.</p></Panel>;
+  return <Table title="Баланс на отчётную дату" heads={['Дата', 'Раздел', 'Статья', 'Сумма']} rows={balance.balanceSheet.map(r => [r.date, r.category, r.article, rub(r.amount)])}/>;
+}
+export default function Dashboard({ cacheScope, role, initialTab = 'overview', allowedSections = allSections }: { cacheScope: string; role: Role; initialTab?: Tab; allowedSections?: Section[] }) {
+  const canAccess = (section: string) => canView({ role, sections: allowedSections }, section);
+  const visibleGroups = groups.filter(group => !group.ids.includes("settings")).map(group => ({ ...group, key: group.ids[0], ids: group.ids.filter(canAccess) })).filter(group => group.ids.length);
+  const [tab, setTab] = useState<Tab>(initialTab);
+  const [expanded, setExpanded] = useState<Record<string, boolean>>(() => Object.fromEntries(groups.map(g => [g.ids[0], g.ids.includes(initialTab)])));
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuButton = useRef<HTMLButtonElement>(null);
+  const sidebar = useRef<HTMLElement>(null);
+  useEffect(() => {
+    const restore = () => {
+      const requested = location.pathname === '/balance' ? 'balance' : new URLSearchParams(location.search).get('tab') || 'overview';
+      const selected = tabs.some(t => t.id === requested) && canView({ role, sections: allowedSections }, requested) ? requested as Tab : initialTab;
+      setTab(selected);
+      setExpanded(previous => {
+        let saved = previous;
+        try { saved = { ...previous, ...JSON.parse(sessionStorage.getItem('dashboard-menu-v1') || '{}') }; } catch {}
+        const group = groups.find(g => g.ids.includes(selected));
+        return { ...saved, ...(group ? { [group.ids[0]]: true } : {}) };
+      });
+      setMenuOpen(false);
+    };
+    restore();
+    window.addEventListener('popstate', restore);
+    return () => window.removeEventListener('popstate', restore);
+  }, [role, allowedSections, initialTab]);
+  useEffect(() => {
+    if (!menuOpen) return;
+    const trigger = menuButton.current;
+    const old = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    sidebar.current?.querySelector<HTMLButtonElement>('button')?.focus();
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setMenuOpen(false);
+      if (event.key === 'Tab') {
+        const items = Array.from(sidebar.current?.querySelectorAll<HTMLElement>('button, a[href]') || []).filter(el => el.getClientRects().length);
+        const first = items[0], last = items.at(-1);
+        if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus(); }
+        else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus(); }
+      }
+    };
+    const media = window.matchMedia('(min-width: 751px)');
+    const closeOnDesktop = () => { if (media.matches) setMenuOpen(false); };
+    media.addEventListener('change', closeOnDesktop);
+    document.addEventListener('keydown', onKey);
+    return () => { document.body.style.overflow = old; document.removeEventListener('keydown', onKey); media.removeEventListener('change', closeOnDesktop); trigger?.focus(); };
+  }, [menuOpen]);
+  function saveGroups(next: Record<string, boolean>) {
+    setExpanded(next);
+    try { sessionStorage.setItem('dashboard-menu-v1', JSON.stringify(next)); } catch {}
+  }
+  const [opiuVisited, setOpiuVisited] = useState(initialTab === 'opiu');
+  function navigate(next: Tab) {
+    if (next === 'opiu') setOpiuVisited(true);
+    if (!canAccess(next)) return;
+    const group = groups.find(g => g.ids.includes(next));
+    if (group) saveGroups({ ...expanded, [group.ids[0]]: true });
+    window.history.pushState(null, '', next === 'balance' ? '/balance' : next === 'overview' ? '/' : `/?tab=${next}`);
+    setTab(next); setDetail(null); setMenuOpen(false);
+  }
+  const [detail, setDetail] = useState<string | null>(null);
+  const [mode, setMode] = useState('week');
+  const [start, setStart] = useState(() => new Date(Date.now() - 6 * dayMs).toISOString().slice(0, 10));
+  const [end, setEnd] = useState(() => new Date().toISOString().slice(0, 10));
+  const [compare, setCompare] = useState(true);
+  const [font, setFont] = useState('normal');
+  const [refresh, setRefresh] = useState(0);
+  const appliedRefresh = useRef(0);
+  const queryCache = useMemo(() => new DashboardQueryCache(cacheScope), [cacheScope]);
+  const [result, setResult] = useState<{ key: string; data: DashboardData; error?: string } | null>(null);
+  const key = `${cacheScope}:${start}:${end}:${refresh}`;
+  const cached = queryCache.get(start, end);
+  const busy = !cached && result?.key !== key;
+  const data = cached || (result?.key === key ? result.data : emptyData);
+  const sources = data.sources || emptySources;
+  const live = useMemo(() => buildLive(sectionData(data, 'overview'), start, end, compare), [data, start, end, compare]);
+  const cashLive = useMemo(() => buildLive(sectionData(data, 'cash'), start, end, compare), [data, start, end, compare]);
+  const salesLive = useMemo(() => buildLive(sectionData(data, 'sales'), start, end, compare), [data, start, end, compare]);
+  const debtLive = useMemo(() => buildLive(sectionData(data, 'debt'), start, end, compare), [data, start, end, compare]);
+  useEffect(() => {
+    let active = true;
+    const force = refresh > appliedRefresh.current && role === 'admin';
+    appliedRefresh.current = refresh;
+    queryCache.load(start, end, { force }).then(payload => {
+      if (active && payload) setResult({ key, data: payload });
+    }).catch((error: unknown) => {
+      if (active) setResult({ key, data: emptyData, error: error instanceof Error ? error.message : 'Сервер недоступен' });
+    });
+    // Idle, bounded prefetch reads existing archives only. Obsolete results cannot replace selection.
+    const prefetch = window.setTimeout(() => {
+      if ((navigator as Navigator & { connection?: { saveData?: boolean } }).connection?.saveData) return;
+      for (const p of neighbourMonths(start)) queryCache.load(p.start, p.end, { prefetch: true }).catch(() => {});
+    }, 1200);
+    const timer = window.setInterval(() => {
+      if (document.visibilityState !== 'visible') return;
+      queryCache.load(start, end, { revalidate: true }).then(payload => {
+        if (active && payload) setResult({ key, data: payload });
+      }).catch(() => {});
+    }, 60000);
+    return () => { active = false; window.clearTimeout(prefetch); window.clearInterval(timer); };
+  }, [key, start, end, refresh, role, queryCache]);
+  useEffect(() => {
+    const channel = typeof BroadcastChannel !== 'undefined' ? new BroadcastChannel('dashboard-session') : undefined;
+    if (channel) channel.onmessage = () => { queryCache.clear(); window.location.replace('/login'); };
+    const clear = () => queryCache.clear();
+    window.addEventListener('pagehide', clear);
+    return () => { queryCache.clear(); channel?.close(); window.removeEventListener('pagehide', clear); };
+  }, [queryCache]);
+  async function refreshCalculations() {
+    queryCache.clear();
+    const payload = await queryCache.load(start, end);
+    if (!payload) throw new Error('Процент сохранён, но остатки пока недоступны. Обновите данные.');
+    setResult({ key, data: payload });
+  }
+  function refreshData() { queryCache.clear(); setRefresh(x => x + 1); }
+  const online = role === 'admin' ? Object.values(sources).some(s => s.available) : Boolean(data.updatedAt);
+  async function logout() {
+    queryCache.clear();
+    if (typeof BroadcastChannel !== 'undefined') { const channel = new BroadcastChannel('dashboard-session'); channel.postMessage('logout'); channel.close(); }
+    try { const response = await fetch('/api/auth/logout', { method: 'POST' }); if (response.ok || response.status === 401) window.location.replace('/login'); else setDetail('Не удалось выйти. Повторите попытку.'); }
+    catch { setDetail('Сервер недоступен. Повторите выход.'); }
+  }
+  return <main className={`shell reference-shell font-${font}`}>
+    <header className="global-topbar" inert={menuOpen}><div className="topbar-brand"><span>МТ</span><b>Март-Трейд</b></div><div className="topbar-status">{busy ? 'Обновляем данные…' : data.archive?.mode === 'archive' ? 'Архивные данные' : 'Управленческий дашборд'}{data.updatedAt && <small> · {new Date(data.archive?.observedAt || data.updatedAt).toLocaleString('ru-RU')}</small>}</div><div className="head-actions">{role === 'admin' && tab === 'overview' && <WalletPercentageSettings compact refresh={refreshCalculations} financial={data.operational}/>}<div className="font-control" title="Размер шрифта"><Type size={16}/>{['normal','large','xlarge'].map((x,i) => <button key={x} aria-label={`Размер шрифта ${i+1}`} className={font===x?'active':''} onClick={()=>setFont(x)}>A</button>)}</div>{role === 'admin' && <details className="admin-menu"><summary><Settings2 size={16}/>Панель администратора</summary><nav aria-label="Администрирование">{tabs.filter(item => item.id === 'settings' || item.id === 'users').map(item => <a key={item.id} id={`tab-${item.id}`} href={`/?tab=${item.id}`} aria-current={tab === item.id ? 'page' : undefined} onClick={event => { if (event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return; event.preventDefault(); navigate(item.id); event.currentTarget.closest('details')?.removeAttribute('open'); }}>{item.label}</a>)}</nav></details>}<span className="topbar-role">{role === 'admin' ? 'Администратор' : 'Просмотр'}</span><button onClick={logout}>Выйти</button></div></header>
+    <div className="workspace" inert={menuOpen}>
+      <div className="page-toolbar"><header className="page-heading"><button ref={menuButton} className="menu-button" aria-label="Открыть меню" aria-expanded={menuOpen} aria-controls="dashboard-navigation" onClick={() => setMenuOpen(true)}><Menu size={20}/></button><div><p>{groups.find(g => g.ids.includes(tab))?.label || 'Управленческая аналитика'}</p><h1>{tabs.find(t => t.id === tab)?.label}</h1></div></header>
+      {tab !== 'opiu' && tab !== 'users' && <DateControl mode={mode} setMode={setMode} start={start} setStart={setStart} end={end} setEnd={setEnd} compare={compare} setCompare={setCompare}/>}
+      {['overview', 'cash', 'movements', 'balance', 'sales', 'plan', 'debt'].includes(tab) && canAccess(tab) && <ExcelExportButton key={tab} disabled={busy} options={{ section: (tab === 'movements' ? 'cash' : tab) as ReportSection, start, end, compare }}/> }
+      </div>
+      {tab !== 'opiu' && tab !== 'users' && <div className="source-note" role="status"><div><b>{busy ? 'Обновляем данные' : data.archive?.mode === 'archive' ? 'Архивные данные' : online ? 'Данные подключённых источников' : 'Нет доступных данных'}</b><small>{result?.key === key && result.error ? result.error : data.updatedAt ? `По состоянию на ${new Date(data.archive?.observedAt || data.updatedAt).toLocaleString('ru-RU')}` : 'Ожидаем данные.'}</small>{data.archive?.message && <details className="archive-freshness"><summary>Проверка актуальности</summary><p>{data.archive.message}</p></details>}</div></div>}
+      <div className="content" aria-busy={busy}>
+        {busy && <p role="status">Загружаем данные за {rangeLabel(start, end)}…</p>}
+        {canAccess('movements') && tab === 'movements' && <Cash live={cashLive} open={setDetail} planning={sectionData(data, 'cash').planningSummary || data.planningSummary}/>}
+        {canAccess('salary') && tab === 'salary' && <SourceUnavailable title="Заработная плата" fields="начисления и выплаты сотрудникам"/>}
+        {canAccess('projects') && tab === 'projects' && <SourceUnavailable title="Потоки по проектам" fields="проект операции: в текущем наборе ДДС нет подтверждённой привязки к проектам"/>}
+        {canAccess('plan') && tab === 'plan' && <PlanningPanel data={sectionData(data, 'plan')} start={start} end={end} compare={compare} loading={busy} canConfigure={role === 'admin'} onConfigure={() => { navigate('settings'); requestAnimationFrame(() => document.getElementById('planning-sources')?.scrollIntoView({ behavior: 'smooth', block: 'start' })); }}/>}
+        {role === 'admin' && tab === 'users' && <section role="tabpanel" id="panel-users" aria-labelledby="tab-users"><UsersPanel/></section>}
+        {canAccess('overview') && <section role="tabpanel" id="panel-overview" aria-labelledby="tab-overview" hidden={tab!=='overview'}><OperationalPanel compare={compare} data={data.operational} onConfigure={role === 'admin' ? () => navigate('settings') : undefined}/></section>}
+        {canAccess('cash') && <section role="tabpanel" id="panel-cash" aria-labelledby="tab-cash" hidden={tab!=='cash'}><Cash live={cashLive} open={setDetail} planning={sectionData(data, 'cash').planningSummary || data.planningSummary}/></section>}
+        {canAccess('sales') && <section role="tabpanel" id="panel-sales" aria-labelledby="tab-sales" hidden={tab!=='sales'}><Sales live={salesLive}/></section>}
+        {canAccess('goods') && <section role="tabpanel" id="panel-goods" aria-labelledby="tab-goods" hidden={tab!=='goods'}><SourceUnavailable title="Управление товаром" fields="остатки, себестоимость и движения товара"/></section>}
+        {canAccess('logistics') && <section role="tabpanel" id="panel-logistics" aria-labelledby="tab-logistics" hidden={tab!=='logistics'}><SourceUnavailable title="Логистика" fields="доставки, перевозчик и стоимость доставки"/></section>}
+        {canAccess('debt') && <section role="tabpanel" id="panel-debt" aria-labelledby="tab-debt" hidden={tab!=='debt'}><ReceivablesPanel report={data.receivables} loading={busy} error={result?.error} refresh={role === 'admin' ? refreshData : undefined} start={start} end={end} compare={compare}/><NlpkPayablesPanel compare={compare} comparison={sectionData(data, 'debt').nlpkComparison || data.nlpkComparison} rows={sectionData(data, 'debt').nlpkPayables || data.nlpkPayables} configured={sectionData(data, 'debt').nlpkConfigured || data.nlpkConfigured} onConfigure={role === 'admin' ? () => navigate('settings') : undefined}/><div className="debt-cards">{data.sources?.payables?.error && <p className="connection-alert" role="alert">{data.sources.payables.error}</p>}<Kpi x={[data.sections?.debt?.creditor.total != null ? 'Кредиторская задолженность' : 'Кредиторская задолженность перед заводом', shortRub(data.sections?.debt?.creditor.total ?? debtLive.factoryDebt), debtLive.factoryDate || 'Дата не указана', 'Другие кредиторы в этом итоге не учтены', 'warn', Banknote]} open={() => setDetail('Кредиторская задолженность перед заводом')}/><Kpi x={['Оплаты поставщикам', shortRub(role === 'admin' ? debtLive.factoryPayments : data.debtPayments), 'За выбранный период', 'Существующий фильтр статей: завод / поставщик', 'good', ArrowUpRight]} open={() => setDetail('Оплаты поставщикам')}/></div></section>}
+        {canAccess('opiu') && <section role="tabpanel" id="panel-opiu" aria-labelledby="tab-opiu" hidden={tab!=='opiu'}>{opiuVisited && <OpiuPanel canRefresh={role === 'admin'}/>}</section>}
+        {canAccess('balance') && <section role="tabpanel" id="panel-balance" aria-labelledby="tab-balance" hidden={tab!=='balance'}><Heading eye="Финансы" title="Баланс"/><Balance data={data} loading={busy} error={result?.key === key ? result.error : undefined}/></section>}
+        {role === 'admin' && <section role="tabpanel" id="panel-settings" aria-labelledby="tab-settings" hidden={tab!=='settings'}>{tab === 'settings' && <ArchivePanel start={start} end={end}/>}<SourcesPanel showWalletSettings={tab === 'settings'} refreshCalculations={refreshCalculations} financial={data.operational} role={role} sources={sources} refresh={refreshData} busy={busy} start={start} end={end} managers={salesLive.managers.map(manager => manager.name)}/></section>}
+      </div>
+    </div>
+    {menuOpen && <button className="nav-backdrop" aria-label="Закрыть меню" onClick={() => setMenuOpen(false)}/>}
+    <aside ref={sidebar} id="dashboard-navigation" className={`dashboard-sidebar${menuOpen ? ' is-open' : ''}`} role={menuOpen ? 'dialog' : undefined} aria-modal={menuOpen || undefined} aria-label="Навигация"><button className="menu-close" aria-label="Закрыть панель меню" onClick={() => setMenuOpen(false)}><X size={22}/></button><div className="brand"><b>МТ</b><span><strong>Март-Трейд</strong><small>{role==='admin'?'Администратор':'Просмотр дашборда'}</small></span></div><div className="nav-mode-switch"><small>РАЗДЕЛЫ</small>{visibleGroups.map(group => <button key={group.key} className={group.ids.includes(tab) ? 'selected' : ''} aria-pressed={group.ids.includes(tab)} onClick={() => navigate(group.ids[0] as Tab)}>{group.label}</button>)}</div><nav aria-label="Разделы дашборда">{visibleGroups.map(group => <div className="nav-group" key={group.key} hidden={!group.ids.includes(tab)}>
+      {group.label && <button type="button" id={`nav-${group.key}-toggle`} className={`nav-group-title nav-group-toggle${group.ids.includes(tab) ? ' has-active-child' : ''}`} aria-expanded={Boolean(expanded[group.key])} aria-controls={`nav-${group.key}-items`} onClick={() => saveGroups({ ...expanded, [group.key]: !expanded[group.key] })}><span>{group.label}</span><ChevronDown size={16} aria-hidden="true"/></button>}
+      <div id={`nav-${group.key}-items`} className={`nav-group-items${group.label ? ' nav-submenu' : ''}`}>
+        {group.ids.map(id => { const t = tabs.find(item => item.id === id)!; const Icon = t.icon; return <a id={`tab-${t.id}`} href={t.id === 'balance' ? '/balance' : t.id === 'overview' ? '/' : `/?tab=${t.id}`} aria-current={tab === t.id ? 'page' : undefined} className={tab === t.id ? 'active' : ''} key={t.id} onClick={event => { if (event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return; event.preventDefault(); navigate(t.id); }}><Icon size={20}/>{t.label}</a>; })}
+      </div>
+    </div>)}</nav><div className="nav-bottom"><small className="source-card-label">ИСТОЧНИКИ ДАННЫХ</small><p><i/><span><b>{busy?'Обновление…':online?'Есть подключённые источники':'Источники не подключены'}</b><small>{data.updatedAt?new Date(data.updatedAt).toLocaleString('ru-RU'):'Актуальность не подтверждена'}</small></span></p></div></aside>
+    {detail && <div className="modal" onClick={()=>setDetail(null)}><article role="dialog" aria-modal="true" aria-label={detail} onClick={e=>e.stopPropagation()}><button className="close" aria-label="Закрыть" onClick={()=>setDetail(null)}><X/></button><h2>{detail}</h2><p>Период: {rangeLabel(start,end)}.</p><p>Обновлено: {data.updatedAt ? new Date(data.updatedAt).toLocaleString('ru-RU') : 'Нет подтверждённых данных'}.</p><p>{tab === 'cash' ? 'Сбор средств — положительные операции ДДС; расходы — сумма отрицательных операций; операционный остаток — их разность. Остатки берутся из источника на указанную дату.' : 'Продажи — сумма по строкам заказов за выбранный период. Заказы считаются по уникальным заполненным номерам, менеджеры — по заполненным значениям источника.'}</p><button className="primary" onClick={()=>setDetail(null)}>Закрыть</button></article></div>}
+  </main>;
+}

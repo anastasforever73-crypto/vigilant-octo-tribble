@@ -7,18 +7,30 @@
   },
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "node scripts/write-build-info.cjs && next build --webpack",
     "start": "next start",
+    "start:codespaces": "PORT=3100 next start --hostname 0.0.0.0 --port 3100",
     "lint": "eslint .",
-    "setup-auth": "node scripts/setup-auth.mjs"
+    "test": "node tests/core.test.cjs && node tests/user-access.test.cjs && node tests/receivables.test.cjs && node tests/receivables-script.test.cjs && node tests/opiu.test.cjs && node tests/planning.test.cjs && node tests/wallet-percentage.test.cjs && node tests/period-balances.test.cjs && node tests/fintablo-period-balances.test.cjs",
+    "setup-auth": "node scripts/setup-auth.mjs",
+    "storage:check": "node scripts/storage.cjs check",
+    "storage:migrate": "node scripts/storage.cjs migrate",
+    "storage:verify": "node scripts/storage.cjs verify",
+    "archive:migrate": "node scripts/storage.cjs archive-migrate",
+    "test:archive": "node tests/period-archive.test.cjs",
+    "test:excel": "node tests/excel-export.test.cjs",
+    "test:timeweb": "node tests/timeweb-compat.test.cjs && node tests/timeweb-preflight.test.cjs",
+    "migration:check": "node scripts/timeweb-preflight.cjs"
   },
   "dependencies": {
+    "@neondatabase/serverless": "^1.1.0",
     "googleapis": "^160.0.0",
     "lucide-react": "^0.468.0",
     "next": "16.2.6",
     "react": "19.2.6",
     "react-dom": "19.2.6",
-    "recharts": "^3.8.0"
+    "recharts": "^3.8.0",
+    "exceljs": "4.4.0"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.2.1",

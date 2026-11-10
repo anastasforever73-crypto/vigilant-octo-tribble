@@ -1,0 +1,17 @@
+.env*
+.git
+.agents
+.codex
+.vscode
+.next
+node_modules
+artifacts
+/archive
+tests
+project-handoff.zip
+mart-data.json
+app/mart-data.json
+tsconfig.tsbuildinfo
+*.md
+*.pdf
+*.zip

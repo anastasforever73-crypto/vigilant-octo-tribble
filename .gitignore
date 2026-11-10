@@ -36,3 +36,6 @@ archive/
 mart-data.json
 **/mart-data.json
 private-data/
+
+# Generated non-secret deployment verification marker.
+/public/build-info.json

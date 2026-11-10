@@ -1,0 +1,42 @@
+.opiu { min-width: 0; color: #263a35; }
+.opiu-heading, .opiu-controls, .opiu-provenance { display: flex; flex-wrap: wrap; align-items: center; gap: 16px; }
+.opiu-heading { justify-content: space-between; margin-bottom: 20px; }
+.opiu-heading h2 { font-size: 24px; margin: 0; }
+.opiu button, .opiu select { min-height: 42px; border: 1px solid #cbd5d0; border-radius: 6px; background: white; color: #263a35; padding: 8px 12px; font: inherit; }
+.opiu button { display: inline-flex; align-items: center; gap: 8px; cursor: pointer; }
+.opiu button:disabled { opacity: .6; cursor: wait; }
+.opiu label { display: flex; flex-direction: column; gap: 6px; font-size: 14px; }
+.opiu-modes { display: flex; gap: 4px; }
+.opiu-modes [aria-pressed=true] { background: #176b52; color: white; }
+.opiu .opiu-check { flex-direction: row; align-items: center; }
+.opiu-controls { padding-bottom: 16px; border-bottom: 1px solid #dce3df; }
+.opiu-period { font-weight: 600; }
+.opiu-kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 210px), 1fr)); gap: 20px; padding: 12px 0 24px; }
+.opiu-kpis article { min-width: 0; border-left: 3px solid #2a8c76; padding-left: 12px; }
+.opiu-kpis article:nth-child(2) { border-color: #c69235; }
+.opiu-kpis article:nth-child(3) { border-color: #4f82a4; }
+.opiu-kpis article:nth-child(4) { border-color: #94536c; }
+.opiu-kpis article > span { display: block; font-size: 14px; margin-bottom: 8px; }
+.opiu-kpis strong { display: block; position: relative; font-size: 24px; }
+.opiu-kpis strong[data-numeric=true] .opiu-amount-value { white-space: nowrap; }
+.opiu-amount-measure { position: fixed; top: 0; left: 0; visibility: hidden; white-space: nowrap; width: max-content; pointer-events: none; }
+.opiu-amount-tooltip { display: none; position: absolute; z-index: 3; top: 100%; left: 0; max-width: 100%; padding: 8px; background: #263a35; color: white; border-radius: 4px; font-size: 13px; font-weight: 400; overflow-wrap: anywhere; }
+.opiu-kpis strong:hover .opiu-amount-tooltip, .opiu-kpis strong:focus .opiu-amount-tooltip { display: block; }
+.opiu-chart { padding: 20px 0; border-top: 1px solid #dce3df; }
+.opiu-chart select { max-width: 100%; width: 420px; }
+.opiu-plot { height: 280px; width: 100%; min-width: 0; }
+.opiu-table-wrap { overflow: auto; max-width: 100%; max-height: 720px; border-top: 1px solid #dce3df; }
+.opiu-table { border-collapse: collapse; width: 100%; font-size: 14px; }
+.opiu-table th, .opiu-table td { padding: 11px 14px; border-bottom: 1px solid #e1e7e3; text-align: right; white-space: nowrap; }
+.opiu-table th:first-child { text-align: left; white-space: normal; min-width: 230px; max-width: 380px; font-weight: 400; }
+.opiu-table thead th { position: sticky; top: 0; background: #edf3ef; z-index: 1; }
+.opiu-table .opiu-total { background: #f0f5f2; font-weight: 600; }
+.opiu-table .opiu-total th { font-weight: 600; }
+.opiu-table [data-state=error], .opiu-error { color: #a3293a; }
+.opiu-table [data-state=blank] { color: #6f7772; }
+.opiu-provenance { font-size: 13px; margin-top: 20px; }
+.opiu-provenance a { display: inline-flex; align-items: center; gap: 6px; }
+.opiu-note { color: #606e65; font-size: 13px; line-height: 1.6; }
+@media (max-width: 900px) { .opiu-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 500px) { .opiu-heading h2 { font-size: 20px; } .opiu-controls > label { width: 100%; } .opiu-kpis strong { font-size: 20px; } .opiu-table th:first-child { min-width: 190px; } }
+@media (max-width: 380px) { .opiu-kpis { grid-template-columns: minmax(0, 1fr); } }

@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { authConfigured, cookieOptions, createSession, json, SESSION_COOKIE, verifyPassword, type Role } from '@/app/lib/auth';
+import { authConfigured, cookieOptions, createSession, json, SESSION_COOKIE, verifyPassword, findAccount, isLegacyAccount } from '@/app/lib/auth';
 import { trustedRequestOrigin } from '@/app/lib/request-origin';
+import { readRegistry, type Viewer } from '@/app/lib/user-registry';
+import { reserveLoginAttempt } from '@/app/lib/login-limiter';
 type Attempt = { count: number; blockedUntil: number; pending: Promise<void> };
 // Bounded account buckets. A shared persistent store is required across server instances.
 const attempts = new Map<string, Attempt>();
@@ -32,7 +34,21 @@ export async function POST(request: NextRequest) {
     ? await request.formData().then(data => ({ login: data.get('login'), password: data.get('password') })).catch(() => null)
     : await request.json().catch(() => null);
   if (!body || typeof body !== 'object' || !('login' in body) || !('password' in body) || typeof body.login !== 'string' || typeof body.password !== 'string' || body.login.length > 200 || body.password.length > 1024) return fail('Укажите логин и пароль', 400);
-  const key = body.login === process.env.ADMIN_LOGIN ? 'admin' : body.login === process.env.USER_LOGIN ? 'user' : 'unknown';
+  let viewers: Viewer[] = [];
+  if (body.login !== process.env.ADMIN_LOGIN) {
+    try { viewers = (await readRegistry()).users; }
+    catch { return fail('Вход временно недоступен. Повторите позже.', 503); }
+  }
+  const account = findAccount(body.login, viewers);
+  let reservation: Awaited<ReturnType<typeof reserveLoginAttempt>> = null;
+  try { reservation = await reserveLoginAttempt(account ? account.login : 'unknown'); }
+  catch { return fail('Вход временно недоступен. Повторите позже.', 503); }
+  if (reservation && reservation.count > 5) {
+    const response = fail('Слишком много попыток. Повторите через 15 минут.', 429);
+    response.headers.set('Retry-After', String(reservation.retryAfter));
+    return response;
+  }
+  const key = account ? `account:${account.login}` : 'unknown';
   const attempt = attempts.get(key) || { count: 0, blockedUntil: 0, pending: Promise.resolve() };
   attempts.set(key, attempt);
   // Serialize verification per bucket so concurrent requests cannot bypass the fifth failure.
@@ -48,16 +64,20 @@ export async function POST(request: NextRequest) {
   try {
     if (attempt.blockedUntil > Date.now()) return blocked();
     if (attempt.blockedUntil) { attempt.count = 0; attempt.blockedUntil = 0; }
-    const role: Role | null = key === 'unknown' ? null : key;
-    const hash = role === 'admin' ? process.env.ADMIN_PASSWORD_HASH! : process.env.USER_PASSWORD_HASH!;
-    if (!(await verifyPassword(body.password, hash)) || !role) {
+    // Run the same expensive hash check for unknown logins, without exposing account existence.
+    const hash = account?.passwordHash || process.env.ADMIN_PASSWORD_HASH!;
+    if (!(await verifyPassword(body.password, hash, isLegacyAccount(account, viewers))) || !account?.enabled) {
       attempt.count++;
-      if (attempt.count >= 5) { attempt.blockedUntil = Date.now() + lockoutMs; return blocked(); }
+      if (attempt.count >= 5 || (reservation && reservation.count >= 5)) { attempt.blockedUntil = Date.now() + lockoutMs; return blocked(); }
       return fail('Неверный логин или пароль', 401);
     }
     attempt.count = 0;
+    if (reservation) {
+      try { await reservation.reset(); } catch { return fail('Вход временно недоступен. Повторите позже.', 503); }
+    }
+    const role = account.role;
     const response = nativeForm ? redirect('/') : json({ authenticated: true, role });
-    response.cookies.set(SESSION_COOKIE, createSession(role), cookieOptions);
+    response.cookies.set(SESSION_COOKIE, createSession(role, account.login, viewers), cookieOptions);
     console.info('AUTH_LOGIN', JSON.stringify({ outcome: 'authenticated', status: nativeForm ? 303 : 200, role }));
     return response;
   } finally { release(); }

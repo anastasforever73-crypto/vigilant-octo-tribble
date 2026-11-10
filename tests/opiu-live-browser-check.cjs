@@ -1,0 +1,143 @@
+// Read-only verification against the single approved worksheet.
+const fs = require('node:fs');
+const Module = require('node:module');
+const ts = require('typescript');
+const assert = require('node:assert/strict');
+const { execFileSync } = require('node:child_process');
+require('@next/env').loadEnvConfig(process.cwd());
+const load = Module._load;
+Module._load = function(n, p, m) { return n === 'server-only' ? {} : load.call(this, n, p, m); };
+require.extensions['.ts'] = (m, f) => m._compile(ts.transpileModule(fs.readFileSync(f, 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, esModuleInterop: true } }).outputText, f);
+const binary = process.env.AGENT_BROWSER_BIN;
+if (!binary) throw new Error('Set AGENT_BROWSER_BIN');
+const options = { encoding: 'utf8', timeout: 90000, stdio: ['pipe', 'pipe', 'pipe'], env: { ...process.env, AGENT_BROWSER_DEFAULT_TIMEOUT: '60000' } };
+const run = (...args) => execFileSync(binary, ['--session', 'opiu-direct', ...args], options);
+const evaluate = code => JSON.parse(execFileSync(binary, ['--session', 'opiu-direct', 'eval', '--stdin', '--json'], { ...options, input: code })).data.result;
+const base = process.env.OPIU_TEST_URL || 'http://127.0.0.1:3100';
+let stage = 'source';
+async function main() {
+  const { createSession } = require('../app/lib/auth.ts');
+  const { sheetsClient, range } = require('../app/lib/google-sheets.ts');
+  const { OPIU_SHEET, OPIU_WORKBOOK } = require('../app/lib/opiu.ts');
+  const client = sheetsClient();
+  const metadata = await client.spreadsheets.get({ spreadsheetId: OPIU_WORKBOOK, fields: 'sheets(properties)' });
+  assert.ok(metadata.data.sheets.some(s => s.properties.title === OPIU_SHEET));
+  const raw = await client.spreadsheets.get({ spreadsheetId: OPIU_WORKBOOK, ranges: [range(OPIU_SHEET, 'A1:AL1007')], fields: 'sheets/data/rowData/values(effectiveValue,formattedValue,effectiveFormat)' });
+  const grid = raw.data.sheets[0].data[0].rowData;
+  const cookie = 'mart_trade_session=' + createSession('admin');
+  const response = await fetch(base + '/api/opiu', { headers: { Cookie: cookie } });
+  assert.equal(response.status, 200);
+  assert.match(response.headers.get('cache-control'), /no-store/);
+  const report = await response.json();
+  assert.deepEqual(report.months, ['2026-04', '2026-05', '2026-06', '2026-07', '2026-08']);
+  assert.equal(report.defaultMonth, '2026-08');
+  const columns = { ИТОГО: [1, 2, 3, 5, 6], ТРАНЗИТ: [9, 10, 11, 13, 14], СКЛАД: [17, 18, 19, 21, 22] };
+  let checked = 0;
+  for (const row of report.rows) {
+    assert.equal(row.label, grid[row.row - 1]?.values?.[0]?.formattedValue || '');
+    for (const [segment, indices] of Object.entries(columns)) for (let i = 0; i < indices.length; i++) {
+      const expected = grid[row.row - 1]?.values?.[indices[i]];
+      const actual = row.cells[report.months[i]][segment];
+      assert.equal(actual.value, expected?.effectiveValue?.numberValue ?? null);
+      assert.equal(actual.text, expected?.formattedValue ?? '');
+      checked++;
+    }
+  }
+  console.log('PASS source parity:', checked, 'cells');
+  stage = 'open authenticated UI';
+  stage = 'login page';
+  run('open', base + '/login');
+  run('set', 'viewport', '1440', '1100');
+  stage = 'local session';
+  evaluate(`document.cookie=${JSON.stringify(cookie + '; Path=/; SameSite=Strict')};true`);
+  stage = 'opiu page';
+  run('open', base + '/?tab=opiu');
+  stage = 'opiu load';
+  run('wait', '--fn', "document.querySelector('.opiu')?.getAttribute('aria-busy') === 'false'");
+  assert.equal(evaluate("document.querySelector('[aria-label=\"Начальный месяц ОПиУ\"]').value"), '2026-08');
+  assert.equal(evaluate("document.querySelector('[data-kpi=\"6\"] .opiu-amount-value').textContent"), grid[5].values[6].formattedValue);
+  assert.equal(evaluate("document.querySelectorAll('.opiu-chart').length"), 0);
+  assert.equal(evaluate("document.querySelector('.opiu-kpis article > span').textContent"), 'Выручка');
+  assert.equal(evaluate("document.querySelector('[data-row=\"6\"] th').textContent"), 'Выручка');
+  assert.equal(evaluate("document.querySelector('.opiu').innerText.includes('сентябрь')"), false);
+  run('screenshot', 'artifacts/verification/opiu-desktop.png');
+  stage = 'all month and segment selections';
+  for (const segment of Object.keys(columns)) {
+    run('select', '[aria-label="Блок ОПиУ"]', segment);
+    for (const month of report.months) {
+      run('select', '[aria-label="Начальный месяц ОПиУ"]', month);
+      const cells = evaluate("Array.from(document.querySelectorAll('.opiu td[data-cell]')).map(c=>({address:c.dataset.cell,text:c.textContent}))");
+      for (const row of report.rows) {
+        const expected = row.cells[month][segment];
+        assert.equal(cells.find(c => c.address === expected.address)?.text, expected.text || 'Нет данных');
+      }
+    }
+  }
+  stage = 'range';
+  run('select', '[aria-label="Блок ОПиУ"]', 'ИТОГО');
+  run('find', 'role', 'button', 'click', '--name', 'Диапазон', '--exact');
+  assert.equal(evaluate("document.querySelectorAll('.opiu-chart').length"), 0);
+  run('select', '[aria-label="Начальный месяц ОПиУ"]', '2026-04');
+  run('select', '[aria-label="Конечный месяц ОПиУ"]', '2026-08');
+  const revenue = columns.ИТОГО.reduce((sum, c) => sum + grid[5].values[c].effectiveValue.numberValue, 0);
+  assert.equal(evaluate("Number(document.querySelector('[data-kpi=\"6\"]').dataset.value)"), revenue);
+  assert.equal(evaluate("document.querySelectorAll('.opiu .recharts-line-dot').length"), 5);
+  assert.equal(evaluate("document.querySelector('[data-row=\"32\"] td:last-child').textContent"), 'Нет полного итога');
+  assert.equal(evaluate("document.querySelector('[data-row=\"21\"] td:last-child').textContent"), 'Не суммируется');
+  run('screenshot', 'artifacts/verification/opiu-range.png');
+  stage = 'refresh';
+  evaluate(`window.__opiuReads=[];const original=window.fetch;window.fetch=async(...args)=>{const response=await original(...args);if(String(args[0])==='/api/opiu'){window.__opiuReads.push(response.status);window.__opiuPayload=await response.clone().json();}return response;};true`);
+  run('find', 'role', 'button', 'click', '--name', 'Обновить ОПиУ', '--exact');
+  run('wait', '--fn', "window.__opiuReads?.length === 1 && document.querySelector('.opiu').getAttribute('aria-busy') === 'false'");
+  assert.deepEqual(evaluate('window.__opiuReads'), [200]);
+  assert.equal(evaluate("document.querySelector('[aria-label=\"Начальный месяц ОПиУ\"]').value"), '2026-04');
+  stage = 'comparison and mobile';
+  run('find', 'role', 'button', 'click', '--name', 'Месяц', '--exact');
+  run('select', '[aria-label="Начальный месяц ОПиУ"]', '2026-08');
+  run('find', 'label', 'Предыдущий период', 'check');
+  assert.equal(evaluate("document.querySelector('[data-row=\"6\"] td:nth-last-child(2)').textContent"), grid[5].values[5].formattedValue);
+  run('set', 'viewport', '390', '900');
+  assert.equal(evaluate('document.documentElement.scrollWidth <= window.innerWidth'), true);
+  assert.equal(evaluate("document.querySelectorAll('.opiu-chart').length"), 0);
+  const fitAmounts = () => evaluate("Array.from(document.querySelectorAll('.opiu-amount-value')).every(el=>el.getBoundingClientRect().width<=el.parentElement.clientWidth && getComputedStyle(el).whiteSpace==='nowrap')");
+  assert.equal(fitAmounts(), true);
+  assert.equal(evaluate("document.querySelector('[data-kpi=\"6\"]').title.includes('142')"), true);
+  run('screenshot', 'artifacts/verification/opiu-mobile.png');
+  run('find', 'role', 'button', 'click', '--name', 'Диапазон', '--exact');
+  run('select', '[aria-label="Начальный месяц ОПиУ"]', '2026-04');
+  assert.equal(evaluate("document.querySelectorAll('.opiu .recharts-line-dot').length"), 5);
+  assert.equal(fitAmounts(), true);
+  run('screenshot', 'artifacts/verification/opiu-mobile-range.png', '--full');
+  run('select', '[aria-label="Показатель графика ОПиУ"]', '32');
+  assert.equal(evaluate("document.querySelectorAll('.opiu .recharts-line-dot').length"), 3);
+  run('select', '[aria-label="Показатель графика ОПиУ"]', '6');
+  run('set', 'viewport', '320', '900');
+  assert.equal(fitAmounts(), true);
+  assert.equal(evaluate('document.documentElement.scrollWidth <= window.innerWidth'), true);
+  run('find', 'role', 'button', 'click', '--name', 'Месяц', '--exact');
+  run('select', '[aria-label="Начальный месяц ОПиУ"]', '2026-08');
+  stage = 'error and recovery fixtures';
+  evaluate(`window.__liveFetch=window.fetch;window.fetch=(url,opts)=>String(url)==='/api/opiu'?Promise.resolve(new Response(JSON.stringify({error:'Тест недоступности источника'}),{status:502,headers:{'Content-Type':'application/json'}})):window.__liveFetch(url,opts);true`);
+  run('find', 'role', 'button', 'click', '--name', 'Обновить ОПиУ', '--exact');
+  run('wait', '--text', 'Показано последнее успешное чтение.');
+  evaluate(`window.fetch=(url,opts)=>{if(String(url)!=='/api/opiu')return window.__liveFetch(url,opts);const report=structuredClone(window.__opiuPayload);report.rows.find(r=>r.row===6).cells['2026-08']['ИТОГО']={value:null,text:'#N/A',state:'error',address:'G6'};return Promise.resolve(new Response(JSON.stringify(report),{headers:{'Content-Type':'application/json'}}));};true`);
+  run('find', 'role', 'button', 'click', '--name', 'Обновить ОПиУ', '--exact');
+  run('wait', '--fn', `document.querySelector('[data-kpi="6"] .opiu-amount-value')?.textContent==='#N/A'`);
+  assert.equal(evaluate("document.querySelectorAll('.opiu-chart').length"), 0);
+  run('find', 'role', 'button', 'click', '--name', 'Диапазон', '--exact');
+  run('select', '[aria-label="Начальный месяц ОПиУ"]', '2026-07');
+  assert.equal(evaluate("document.querySelectorAll('.opiu .recharts-line-dot').length"), 1);
+  run('find', 'role', 'button', 'click', '--name', 'Месяц', '--exact');
+  run('select', '[aria-label="Начальный месяц ОПиУ"]', '2026-08');
+  evaluate('window.fetch=window.__liveFetch;true');
+  run('find', 'role', 'button', 'click', '--name', 'Обновить ОПиУ', '--exact');
+  run('wait', '--fn', "document.querySelector('.opiu').getAttribute('aria-busy') === 'false'");
+  assert.equal(evaluate("Number(document.querySelector('[data-kpi=\"6\"]').dataset.value)"), grid[5].values[6].effectiveValue.numberValue);
+  assert.equal(evaluate("!!document.querySelector('[data-nextjs-dialog],.vite-error-overlay')"), false);
+  const userResponse = await fetch(base + '/api/opiu', { headers: { Cookie: 'mart_trade_session=' + createSession('user') } });
+  assert.equal(userResponse.status, 200);
+  assert.equal((await fetch(base + '/api/opiu')).status, 401);
+  fs.writeFileSync('artifacts/verification/opiu-parity.json', JSON.stringify({ checkedAt: new Date().toISOString(), sheet: report.sheet, months: report.months, cellsChecked: checked, mismatches: 0, monthlyUiSelections: 15, rangeRevenue: revenue, refresh: true, comparison: true, mobileOverflow: false, errorRecovery: true, roles: ['admin', 'user'], unauthenticatedStatus: 401 }, null, 2));
+  console.log('PASS: 15 monthly UI selections, range, chart marks, refresh, comparisons, mobile, error recovery, access');
+}
+main().catch(e => { console.error('FAIL at', stage, e instanceof assert.AssertionError ? e.message : String(e.stderr || e.name).slice(0, 1000)); process.exitCode = 1; }).finally(() => { try { run('cookies', 'clear'); run('close'); } catch {} });

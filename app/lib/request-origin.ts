@@ -14,6 +14,15 @@ export function trustedRequestOrigin(request: NextRequest): string | null {
   try { origin = new URL(supplied); } catch { return null; }
   if (origin.origin !== supplied || !['http:', 'https:'].includes(origin.protocol)) return null;
   const host = request.headers.get('host') || request.nextUrl.host;
+  // Explicit public origin for a reverse proxy whose upstream URL uses the bind address.
+  // Forwarded headers never add trusted hosts.
+  if (process.env.APP_ORIGIN) {
+    try {
+      const pinned = new URL(process.env.APP_ORIGIN);
+      if (pinned.protocol !== 'https:' || pinned.origin !== process.env.APP_ORIGIN) return null;
+      return supplied === pinned.origin && host === pinned.host ? supplied : null;
+    } catch { return null; }
+  }
   const port = request.nextUrl.port;
   const localHosts = ['localhost', '127.0.0.1', '[::1]'].map(name => name + (port ? `:${port}` : ''));
   // Next.js constructs this URL from the bind address, which can be 0.0.0.0.

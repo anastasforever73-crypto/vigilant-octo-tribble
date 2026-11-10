@@ -1,0 +1,33 @@
+.planning { display: grid; gap: 20px; }
+.planning h2, .planning h3 { margin: 0 0 12px; }
+.planning p { color: var(--muted, #74847b); line-height: 1.6; }
+.planning-kpis { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+.planning-kpis article { display: flex; flex-direction: column; gap: 12px; }
+.planning-kpis strong { font-size: clamp(20px, 2.1vw, 30px); overflow-wrap: anywhere; color: #208b65; }
+.planning-kpis small { color: #74847b; }
+.planning-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
+.planning-categories { min-width: 0; }
+.planning-table { overflow-x: auto; margin-top: 16px; }
+.planning-table table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.planning-table th, .planning-table td { padding: 12px; border-bottom: 1px solid #e1ebe5; text-align: right; white-space: nowrap; }
+.planning-table th:first-child, .planning-table td:first-child { text-align: left; white-space: normal; min-width: 130px; }
+.planning-table thead, .planning-table tfoot { background: #f0f7f3; }
+.planning details { margin-top: 20px; }
+.planning summary { cursor: pointer; font-weight: 600; }
+.planning-empty { padding-top: 8px; }
+@media (max-width: 1100px) { .planning-grid { grid-template-columns: 1fr; } }
+@media (max-width: 650px) { .planning-kpis { grid-template-columns: 1fr; } }
+.reference-shell .planning { gap:14px; }
+.reference-shell .planning-intro h2 { font-size:14px; margin:0 0 5px; }
+.reference-shell .planning-intro p { font-size:11px; margin:5px 0; }
+.reference-shell .planning-kpis { gap:12px; }
+.reference-shell .planning-grid { gap:14px; }
+.reference-shell .planning-kpis .reference-metric { display:block; }
+.reference-shell .planning-table { margin-top:0; }
+.reference-shell .planning-table th[scope=row] { text-transform:none; letter-spacing:0; color:var(--text); font-size:12px; }
+.reference-shell .planning-table tfoot th, .reference-shell .planning-table tfoot td { font-weight:700; }
+.reference-shell .planning-categories details { font-size:12px; }
+@media(min-width:751px) and (max-width:1100px) { .reference-shell .planning-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } }
+
+.reference-shell .planning-kpis .reference-metric strong { font-size:25px; color:var(--text); }
+@media(max-width:750px) { .reference-shell .planning-kpis .reference-metric strong { font-size:20px; } }

@@ -1,0 +1,678 @@
+{
+  "deploymentId": "dpl_4XfG71z3JMCEri4ZCWdSCG8j23JZ",
+  "deploymentUrl": "https://vigilant-octo-tribble-p1a1c61gk-anastasforever73-2206s-projects.vercel.app",
+  "productionDomain": "vigilant-octo-tribble-eosin.vercel.app",
+  "createdAtMoscow": "2026-10-26T13:23:19+03:00",
+  "repository": "anastasforever73-crypto/vigilant-octo-tribble",
+  "branchLabel": "main",
+  "gitMetadataSha": "773f40b0dd7a9fd398ea8eb87d1ba0e2c2eab7f4",
+  "source": "CLI working tree; Git metadata SHA is not the deployed source snapshot",
+  "evidence": "Vercel authenticated browser: current production overview, deployment details and all non-credential Source files copied in full",
+  "comparison": "Text contents compared, ignoring EOF newlines omitted by Vercel Copy",
+  "credentialDirectoriesExcluded": [
+    ".aws"
+  ],
+  "archiveSha256": "5adaec7b0948f85c74abf540b3ab693fdfefa0720ca2b2667fe87db4b0a71545",
+  "files": [
+    {
+      "path": "app/api/auth/login/route.ts",
+      "status": "match",
+      "sourceContentSha256": "20fa1337a136fe1383d6fee781050162a9a152b5868ccd4edf2a0c2e9dd216a4"
+    },
+    {
+      "path": "app/api/export/route.ts",
+      "status": "match",
+      "sourceContentSha256": "65cb5670825b82b3c39c064fda53344191e44f644c79154bf994e4121fd28b78"
+    },
+    {
+      "path": "app/api/archive/route.ts",
+      "status": "match",
+      "sourceContentSha256": "37bc8144404b9e746d4b4a03b072a3346a59f45e520305add773bed7fa8329f0"
+    },
+    {
+      "path": "app/api/auth/logout/route.ts",
+      "status": "match",
+      "sourceContentSha256": "9a6e9f926689007b540ef0fbaa29b7757a1eae1bf485fc98dbea156d8a389c29"
+    },
+    {
+      "path": "app/api/connections/[id]/check/route.ts",
+      "status": "match",
+      "sourceContentSha256": "54681976aeaf2128c2f08c05023beb8baf9cf9395bedaf98293f5a2b990d6890"
+    },
+    {
+      "path": "app/api/connections/[id]/sync/route.ts",
+      "status": "match",
+      "sourceContentSha256": "340a5b1925e478d7023ef54d3780f3d244ad5b339cb9ecc0eb0cd65753084647"
+    },
+    {
+      "path": "app/api/connections/[id]/route.ts",
+      "status": "match",
+      "sourceContentSha256": "f6021ea6274d9342432899e1b5cd8d78c41a6f9443984ccb0f1a09414c6ff880"
+    },
+    {
+      "path": "app/api/connections/inspect/route.ts",
+      "status": "match",
+      "sourceContentSha256": "f4a66fdd904dc5c6b3aa9024f3cfc8ca8967a97e2ea1021f737909df14093470"
+    },
+    {
+      "path": "app/api/connections/readiness/route.ts",
+      "status": "match",
+      "sourceContentSha256": "68cc651fb1a05b0c9645744e6101d9db97540f39de6f8cd1cd0847b8995869e8"
+    },
+    {
+      "path": "app/api/connections/route.ts",
+      "status": "match",
+      "sourceContentSha256": "97311d8255bca19b0f66b4f1a5cf59093b2c4001a734e15bfcc80ac2a89e070c"
+    },
+    {
+      "path": "app/api/dashboard/route.ts",
+      "status": "match",
+      "sourceContentSha256": "f605b28f5720935059a3db224de8a0e42c4a2a2deeb36ea62719af2764df5fd4"
+    },
+    {
+      "path": "app/api/debt-metadata/route.ts",
+      "status": "match",
+      "sourceContentSha256": "0b9dd5ac983e0d83964c685c4c30d7f9c4f0d6c27466587d42e9f15388289714"
+    },
+    {
+      "path": "app/api/fintablo/route.ts",
+      "status": "match",
+      "sourceContentSha256": "a56f24e9eacd5f6bb351fa32b72c9fd5915f88eab9085ae09ca1bf0d186c9aa2"
+    },
+    {
+      "path": "app/api/google-sheets/route.ts",
+      "status": "match",
+      "sourceContentSha256": "67dde8b0936d72fae6fbc1e0e91cb8ed6376bc229d4ec7e2f7ec0f8ea9c040f6"
+    },
+    {
+      "path": "app/api/opiu/route.ts",
+      "status": "match",
+      "sourceContentSha256": "3aa339fd46fc3e5356981e266f989b1e0f85ced97baa92b19693bbaf6f3dce4d"
+    },
+    {
+      "path": "app/api/settings/wallet-percentage/route.ts",
+      "status": "match",
+      "sourceContentSha256": "551cbfda7d79d92ab7af28bdff3d0679c4d26d4f202ebbaa6c914121c1db3379"
+    },
+    {
+      "path": "app/api/settings/route.ts",
+      "status": "match",
+      "sourceContentSha256": "d4888d5d6f0a406616f9c44cd15ff81a3d101c0913f6e92dc2ad0240183bca1f"
+    },
+    {
+      "path": "app/api/sources/check/route.ts",
+      "status": "match",
+      "sourceContentSha256": "919923e05c7e596f998f8096a72ccd1871646cc04bf74816a15ac317c7c7babd"
+    },
+    {
+      "path": "app/api/users/route.ts",
+      "status": "match",
+      "sourceContentSha256": "416398fa533940b8d6276f93dae1600e2b0a74d31962e21de7b9bae6d18d9bdd"
+    },
+    {
+      "path": "app/balance/page.tsx",
+      "status": "match",
+      "sourceContentSha256": "0acda3c89d84aced7a6fe4dea5f961f4d5c81abc3992c2918d0067199d9227a5"
+    },
+    {
+      "path": "app/lib/connections/adapters.ts",
+      "status": "match",
+      "sourceContentSha256": "f57e696b1ddf9c17e4c10f95c584d0a54fbc72054e839a883ab1b5fc4e8dd9fc"
+    },
+    {
+      "path": "app/lib/connections/compose.ts",
+      "status": "match",
+      "sourceContentSha256": "fc73978cdcc6b49e470fafb503775b7403e96a5e45f7c1d5967311caed1af866"
+    },
+    {
+      "path": "app/lib/connections/crypto.ts",
+      "status": "match",
+      "sourceContentSha256": "39717a5a42547558e59ed8980f8d4c1c88e60cffa2f241f4f531f1acde60e5ad"
+    },
+    {
+      "path": "app/lib/connections/dashboard.ts",
+      "status": "match",
+      "sourceContentSha256": "08155c99ca29ac25a3c3f19827bede3bbf22d71c7738f005e542ffc4023b2fdf"
+    },
+    {
+      "path": "app/lib/connections/http.ts",
+      "status": "match",
+      "sourceContentSha256": "28dbf51103819cd3d5509ed5882e4b79508683b1ca43997a3d8d6b515daee797"
+    },
+    {
+      "path": "app/lib/connections/merge.ts",
+      "status": "match",
+      "sourceContentSha256": "2a2656296e05714cf6548755c6eca7dd25a680f79aa1afcae59b4cc4ddc0e5e7"
+    },
+    {
+      "path": "app/lib/connections/model.ts",
+      "status": "match",
+      "sourceContentSha256": "969af152ff8512eef15781dc13f0124238276ebb7f35510a09fa2e9b469f77ff"
+    },
+    {
+      "path": "app/lib/connections/storage-health.ts",
+      "status": "match",
+      "sourceContentSha256": "8e54403069106dffc4bd9f320d087b6f4df84d232390410b97bded8ad334788c"
+    },
+    {
+      "path": "app/lib/connections/store.ts",
+      "status": "match",
+      "sourceContentSha256": "a5223efff8fb05a2b3f4c1d33802ce3ef24f718b8b409788017aa13b0b39f446"
+    },
+    {
+      "path": "app/lib/connections/sync.ts",
+      "status": "match",
+      "sourceContentSha256": "811a1dd44ce25f7233c0984fa55634ba2af18404bc4895ad62008bcf741e194a"
+    },
+    {
+      "path": "app/lib/admin-session.ts",
+      "status": "match",
+      "sourceContentSha256": "11a7abf156facffa45fc360442774080536f50985a4376a6feef42f6cbac1297"
+    },
+    {
+      "path": "app/lib/archive-source-probe.ts",
+      "status": "match",
+      "sourceContentSha256": "f9dfe4e429c76cf0237e6c2a9197e009da03ad33fbed177e0e46001dc2055100"
+    },
+    {
+      "path": "app/lib/archive-version.ts",
+      "status": "match",
+      "sourceContentSha256": "50c311af526cfebc0c8386c5526b8fa4264ea5c5d34fe68814335efb7251bf71"
+    },
+    {
+      "path": "app/lib/auth.ts",
+      "status": "match",
+      "sourceContentSha256": "3ee7241ebc48691f49988c09cd20883728d54e0c1c75809b6f53e0bd37ebb70d"
+    },
+    {
+      "path": "app/lib/dashboard-access.ts",
+      "status": "match",
+      "sourceContentSha256": "0934126f71c754b7c0dff8d06ae00bd2ddd83a54d0d67487bba0a64d8c522b3a"
+    },
+    {
+      "path": "app/lib/dashboard-data.ts",
+      "status": "match",
+      "sourceContentSha256": "f343991e240c65fa3bf780722ab618fd8aa44e521b270ccadad432c4fe9b1838"
+    },
+    {
+      "path": "app/lib/dashboard-query-cache.ts",
+      "status": "match",
+      "sourceContentSha256": "2167d68932ef4cbd981737eaaa6a018f8570e0589a90f3a6bdef4680dcac6879"
+    },
+    {
+      "path": "app/lib/debt-archive.ts",
+      "status": "match",
+      "sourceContentSha256": "dd39d1a4f01488de86b38558dd459c1e60973560eb094f59b4282e12a575ce9c"
+    },
+    {
+      "path": "app/lib/debt-data.ts",
+      "status": "match",
+      "sourceContentSha256": "b4237610692c01846bbabdf05aefb25e139e63ffc9fcf500df60630e46b63cc6"
+    },
+    {
+      "path": "app/lib/excel-formulas.ts",
+      "status": "match",
+      "sourceContentSha256": "70b6cbfc22eb4074bff198947ccb29caa9d8c1e1e0f784f11ac381d36de7b0cb"
+    },
+    {
+      "path": "app/lib/excel-report.ts",
+      "status": "match",
+      "sourceContentSha256": "a22b954f937835dd6987444c59f09ce6d98e7891a67a14d351334a1fc7187d79"
+    },
+    {
+      "path": "app/lib/fintablo-adapter.ts",
+      "status": "match",
+      "sourceContentSha256": "f8290ed669cfc72aee5a9052e8b2ee4678c9782732cab950dc7fd390e1fb25bd"
+    },
+    {
+      "path": "app/lib/fintablo-period-balances.ts",
+      "status": "match",
+      "sourceContentSha256": "ee5ea5f5fb48765ee9d8679ac555371e1c7fd1c9922098128c88255fe6411d46"
+    },
+    {
+      "path": "app/lib/fintablo.ts",
+      "status": "match",
+      "sourceContentSha256": "08bc15c4b89dc3fc8425f35ef4fa942fae35e558cb846733abac1ddeab61d1d7"
+    },
+    {
+      "path": "app/lib/google-dashboard.ts",
+      "status": "match",
+      "sourceContentSha256": "008a6af270253c9cea6be7e906750814d5369e36e1d65d0b2a76c11f941a7ee2"
+    },
+    {
+      "path": "app/lib/google-sheets.ts",
+      "status": "match",
+      "sourceContentSha256": "fef56f40c9345d89a6ed8eff35605d4ff9397cfb73fcbf4d6b538788d846e474"
+    },
+    {
+      "path": "app/lib/live-data.ts",
+      "status": "match",
+      "sourceContentSha256": "54a3fefc34a802211dacfdafad8ba09ec2a803032ea681966b71c2865db1e774"
+    },
+    {
+      "path": "app/lib/load-dashboard.ts",
+      "status": "match",
+      "sourceContentSha256": "cb992e2494a2b32411e75df39116f642fc438b30fdd00d2165e8c85d47dc6c8c"
+    },
+    {
+      "path": "app/lib/login-limiter.ts",
+      "status": "match",
+      "sourceContentSha256": "786dedd681013b3f95a287fd3545d4b31fa583000b0300707f0d6248d6aa6962"
+    },
+    {
+      "path": "app/lib/memory-cache.ts",
+      "status": "match",
+      "sourceContentSha256": "425e6f655d082d82535fb4b55a8a3f4cb7a869f35be74110930c757e76ddd684"
+    },
+    {
+      "path": "app/lib/nlpk-payables.ts",
+      "status": "match",
+      "sourceContentSha256": "68d472eed57c9545a7ac2f368c49987a4d18cfccd954bab07fb07e51b4bc84df"
+    },
+    {
+      "path": "app/lib/operational.ts",
+      "status": "match",
+      "sourceContentSha256": "9a7c66e3b410963d715874e7cde4657ae3e1238c19953d286e514d05015b757a"
+    },
+    {
+      "path": "app/lib/opiu.ts",
+      "status": "match",
+      "sourceContentSha256": "db916397273a623cc0a1e0efee27dc317ac0955ffe52dfb5dcb3d43950452109"
+    },
+    {
+      "path": "app/lib/password-policy.mjs",
+      "status": "match",
+      "sourceContentSha256": "0686368b1c36754e70cb7b8f947f5cfc10b030126f1d23d99cf1db7b1d2fa102"
+    },
+    {
+      "path": "app/lib/period-archive.ts",
+      "status": "match",
+      "sourceContentSha256": "a8f08fe339e871c8b453bdf11d21021949e1b6491025c0f11926d1dc4eb8eae8"
+    },
+    {
+      "path": "app/lib/period-balances.ts",
+      "status": "match",
+      "sourceContentSha256": "d79c5da4ce29b4fee1e7ad22d31fe7333af9b83a5809f62856fffa2ac8fa1f6d"
+    },
+    {
+      "path": "app/lib/planning-indicators.ts",
+      "status": "match",
+      "sourceContentSha256": "3f4471d847121f86010aab77322b79f184ffbba9e5c64a24add016fa2808d9ae"
+    },
+    {
+      "path": "app/lib/planning.ts",
+      "status": "match",
+      "sourceContentSha256": "f4e466b56ec5aa96fde0a5dbc98d1b6ee5163a9e5c0e3761b7d02f4dbbe1b880"
+    },
+    {
+      "path": "app/lib/read-fintablo-plans.ts",
+      "status": "match",
+      "sourceContentSha256": "60e8c6007a0a990de846c9b2f450047e9e4230cf05330f207dbbde1184d8d4c6"
+    },
+    {
+      "path": "app/lib/read-operational.ts",
+      "status": "match",
+      "sourceContentSha256": "aad1c917abf65d0a85021eb0d139556f1e17d73d7c1827455703b89eba604e5d"
+    },
+    {
+      "path": "app/lib/read-opiu.ts",
+      "status": "match",
+      "sourceContentSha256": "245e402d724fed4049caa9659dafb84599282c382f7180bdda4da22c47d1b0e4"
+    },
+    {
+      "path": "app/lib/read-receivables.ts",
+      "status": "match",
+      "sourceContentSha256": "4a9179f99177853cb687e9b2ea60bb208fcc2598410e428a3c2d0d139577b0ea"
+    },
+    {
+      "path": "app/lib/receivables-comparison.ts",
+      "status": "match",
+      "sourceContentSha256": "cac73d4cfd0cda476e19f703275a5ef29b18bb89fd1acb3c43a5955bc804f98c"
+    },
+    {
+      "path": "app/lib/receivables.ts",
+      "status": "match",
+      "sourceContentSha256": "5464683f6c43aacc54d4388c567aabfd7a91159268a3f3ac96dc5c95bce401dc"
+    },
+    {
+      "path": "app/lib/request-origin.ts",
+      "status": "match",
+      "sourceContentSha256": "583c2b1e769c6b8c403171c44243e7f4fb2aa428c31dd7ac1217956812b98190"
+    },
+    {
+      "path": "app/lib/source-input-archive.ts",
+      "status": "match",
+      "sourceContentSha256": "feaf1e3bc026da1bfe5186a7c9ca5fcd2faca538c707110ed685ca9ec41ee68c"
+    },
+    {
+      "path": "app/lib/source-settings.ts",
+      "status": "match",
+      "sourceContentSha256": "c500411362e27fe21407c6eba899d013113396c0d56d51363d81da354b322262"
+    },
+    {
+      "path": "app/lib/source-values.ts",
+      "status": "match",
+      "sourceContentSha256": "af897f693ba7e98e0f5a34fce2ad77dbc6b3e20b7661757e9056b8b82e6c1170"
+    },
+    {
+      "path": "app/lib/user-access.ts",
+      "status": "match",
+      "sourceContentSha256": "8db5936e5b4eed492942bd529858f80bcfcfc6ce4b6e960d987dcb3f928be9dd"
+    },
+    {
+      "path": "app/lib/user-registry.ts",
+      "status": "match",
+      "sourceContentSha256": "d6c7a5ea4fe2108799e5bae674e6395b50b0df8c124363c3ebc060adcfb6718a"
+    },
+    {
+      "path": "app/lib/verify-archive-background.ts",
+      "status": "match",
+      "sourceContentSha256": "990317a53f15737b0615a1ec346741665cb3217e0d88e42deaa1d2d29046d5d9"
+    },
+    {
+      "path": "app/lib/wallet-percentage-store.ts",
+      "status": "match",
+      "sourceContentSha256": "6f66af3a4bec2ec0b0399325df009b07372f3f94333bbfdc1b81c304a26bb01e"
+    },
+    {
+      "path": "app/lib/wallet-percentage.ts",
+      "status": "match",
+      "sourceContentSha256": "85d9f76ce09ad6df0e225c93b15ee6a6aad44dd1076ba199775f78056649b86a"
+    },
+    {
+      "path": "app/login/login-form.tsx",
+      "status": "match",
+      "sourceContentSha256": "e775ac6b67dc826fbd2b604bd4bd410c883acf71fcb5513013130c4c98fc0112"
+    },
+    {
+      "path": "app/login/page.tsx",
+      "status": "match",
+      "sourceContentSha256": "d16e9b41b0c4756eb623c2164aeadd4c06150dba3c231930f227e83c67aae092"
+    },
+    {
+      "path": "app/settings/page.tsx",
+      "status": "match",
+      "sourceContentSha256": "eaa5510107cca3769069ea974d8271b42b924f27ec531a04a356ba397c0e361e"
+    },
+    {
+      "path": "app/archive-panel.tsx",
+      "status": "match",
+      "sourceContentSha256": "e6e7b084f75cbda93ce77a0c16679f2328c793730356f60dbca540dba083cf48"
+    },
+    {
+      "path": "app/dashboard-client.tsx",
+      "status": "match",
+      "sourceContentSha256": "332dce69fbeb0fd71757ecffa5b3bc72f7110e4e6c03274fa610046216adb60d"
+    },
+    {
+      "path": "app/dashboard-overrides.css",
+      "status": "match",
+      "sourceContentSha256": "6bbab74bbe15ba1c4bad77c89a150aad10a0281747ad077ea5d89d94c563c1f5"
+    },
+    {
+      "path": "app/excel-export-button.tsx",
+      "status": "match",
+      "sourceContentSha256": "00601266646a4b32686e26169bdc956ca601da231a1ce1bf3802af3930dae6a4"
+    },
+    {
+      "path": "app/excel-export.css",
+      "status": "match",
+      "sourceContentSha256": "a68f04f04807fc06cd279d8b3ce686b0fad4097591af99dd1fbbdfd596e64e8b"
+    },
+    {
+      "path": "app/globals.css",
+      "status": "match",
+      "sourceContentSha256": "53936a0eaaab49bc75b7f524a283252ad0950bebd3df9f1515066fd362b4912a"
+    },
+    {
+      "path": "app/info-tip.tsx",
+      "status": "match",
+      "sourceContentSha256": "4cc21ed8e188ae195e1a905a060d336adaa7c0422782184eacece2f8831463aa"
+    },
+    {
+      "path": "app/layout.tsx",
+      "status": "match",
+      "sourceContentSha256": "a9010c5d90bbe1cc742296b82555e8ced269dd7eb8fcd0eb36f2f565344ec1c5"
+    },
+    {
+      "path": "app/nlpk-payables-panel.tsx",
+      "status": "match",
+      "sourceContentSha256": "5f5640dd76aa98be1a4e57b3aba8659b80c3594f76adb49b478a567dd9c23277"
+    },
+    {
+      "path": "app/operational-panel.tsx",
+      "status": "match",
+      "sourceContentSha256": "9a33fde7c437e2d2fdb0609266d421f6b1ec695903d2596e8fbf672c092c2bf3"
+    },
+    {
+      "path": "app/opiu-panel.tsx",
+      "status": "match",
+      "sourceContentSha256": "60472b8deab7f89bd0117a4a0f76ce1bc566a176c0e21d6dd21d7bb09a489ada"
+    },
+    {
+      "path": "app/opiu.css",
+      "status": "match",
+      "sourceContentSha256": "e11853d946330af2b622bb20d275ddf08753395f1ef38ce4e068b5110d7f8fbe"
+    },
+    {
+      "path": "app/page.tsx",
+      "status": "match",
+      "sourceContentSha256": "faaf54453f482b0132d0491dc1e409c9bec9322159159cf43cc384f0be49e0ea"
+    },
+    {
+      "path": "app/planning-panel.tsx",
+      "status": "match",
+      "sourceContentSha256": "283e3a64e8175d675cb0c67be5a5c3661455535431d72d70bbb87a4f3d21f5e9"
+    },
+    {
+      "path": "app/planning.css",
+      "status": "match",
+      "sourceContentSha256": "b65b8f8a81492284ac446287b27a75e91cb1993f5cc873df47130701f27f41e6"
+    },
+    {
+      "path": "app/receivables-panel.tsx",
+      "status": "match",
+      "sourceContentSha256": "e856ed4020206c33572f9b769bb9f2369c8ac860ccd2b43a3fb950cff62b04f4"
+    },
+    {
+      "path": "app/reference-metric.tsx",
+      "status": "match",
+      "sourceContentSha256": "48a89bb390ec45b03a726a148adee86afd1df16e93df12a393c62978fef884b2"
+    },
+    {
+      "path": "app/sources-panel.tsx",
+      "status": "match",
+      "sourceContentSha256": "8034a32133d33a2173249e3ca41b25cd277186fd976b45474a2ae23563069427"
+    },
+    {
+      "path": "app/users-panel.tsx",
+      "status": "match",
+      "sourceContentSha256": "72972bd2a2bb8c90ae8842a9e40e0a40a75bd78d9ca02b4f038194e832d8071e"
+    },
+    {
+      "path": "app/wallet-percentage-settings.tsx",
+      "status": "match",
+      "sourceContentSha256": "0541b5c8e270caf2ebfa7d6b2ae9ac7cd1068a9f0337a07ae9d91cc37f1909f5"
+    },
+    {
+      "path": "migrations/001-connections.sql",
+      "status": "match",
+      "sourceContentSha256": "bad1b75ab7b1eaf2bc5dcabfd391d718e607b97cc87774a60e85c950c3c5316f"
+    },
+    {
+      "path": "migrations/002-multiple-source-links.sql",
+      "status": "match",
+      "sourceContentSha256": "2a2cceeb0353cf8d14a07ce52c53453b8110d5ac6c6e1a2349b0d58c44d59ddd"
+    },
+    {
+      "path": "migrations/003-user-access.sql",
+      "status": "match",
+      "sourceContentSha256": "1bf123ac1cbc6a90c8c979ad5d01e7cd048ea1c25ebff323c484ad344200d95d"
+    },
+    {
+      "path": "migrations/004-dashboard-archive.sql",
+      "status": "match",
+      "sourceContentSha256": "ff22501e6ea81dcb970ef4deaad3f552f99c8e768d4429cc57cdc464756209cf"
+    },
+    {
+      "path": "migrations/005-durable-period-archive.sql",
+      "status": "match",
+      "sourceContentSha256": "3b59598a540e48128866f945a2246536bc36c91b9be31520081eb301ab6abd85"
+    },
+    {
+      "path": "migrations/006-source-input-archive.sql",
+      "status": "match",
+      "sourceContentSha256": "e89719083029be7e53a1c65c6ad06277d5f92d1aff42b7c6960565a5d3739374"
+    },
+    {
+      "path": "migrations/007-wallet-percentage.sql",
+      "status": "match",
+      "sourceContentSha256": "3863dbfe9a1e24b773ce79cfb888e4157621cc0c1e162b5bbd587fbb9a9105e7"
+    },
+    {
+      "path": "migrations/008-user-registry.sql",
+      "status": "match",
+      "sourceContentSha256": "9e42d1337fc3d5d6386969ff8c7939c72110dd2c7eb81c97d6e3eb921f53a960"
+    },
+    {
+      "path": "public/favicon.svg",
+      "status": "match",
+      "sourceContentSha256": "81e33930db33e75d53721acae92508228327d1b0b96b8d4abd1cd2f6c7d62672"
+    },
+    {
+      "path": "scripts/compare-receivables.cjs",
+      "status": "match",
+      "sourceContentSha256": "9293568595d70c40c70c4de5dcd39208e3a9d49473a281d2e6658756e8519120"
+    },
+    {
+      "path": "scripts/date-cache-register.cjs",
+      "status": "match",
+      "sourceContentSha256": "9398e21ac22375ed38a40d33928571cfa09709c98353d2ce3cddaef448cf9ff5"
+    },
+    {
+      "path": "scripts/hash-password.mjs",
+      "status": "match",
+      "sourceContentSha256": "71cd9c8ca79339352409303a4520dd41accba129e3b43e08cb085344a9a996e5"
+    },
+    {
+      "path": "scripts/migrate-user-access.cjs",
+      "status": "match",
+      "sourceContentSha256": "0947e993368024f39785abb7518f408e9a265656f86e678966cac7c17dc9c049"
+    },
+    {
+      "path": "scripts/profile-dashboard-cache.cjs",
+      "status": "match",
+      "sourceContentSha256": "e4ee56bcb3d561f3d7b3f3c8a266c35cdd7c68ccb2287d9d873be61bf64551e3"
+    },
+    {
+      "path": "scripts/recover-sources.cjs",
+      "status": "match",
+      "sourceContentSha256": "9e4d823fb3a02f1489c16da3bdee8c74edf0e74d0d0369ea32c2fd7e0bce2fbe"
+    },
+    {
+      "path": "scripts/setup-auth.mjs",
+      "status": "match",
+      "sourceContentSha256": "f7746cd539fa54f9cdfa8957d3955213188a8065506f485dedd064ff4d47ddad"
+    },
+    {
+      "path": "scripts/storage.cjs",
+      "status": "match",
+      "sourceContentSha256": "d449bab036f22086a9436476f8bdb0cce9c2e649ac347cff50de99ff1bc2c0bc"
+    },
+    {
+      "path": "scripts/verify-archive-restart.cjs",
+      "status": "match",
+      "sourceContentSha256": "2c2fad03112da10523f6883edbfdf8ae4362651fdfc7ffc3030fa153c688cbde"
+    },
+    {
+      "path": "scripts/verify-archive-storage.cjs",
+      "status": "match",
+      "sourceContentSha256": "feebea598d378254ab39b56a822304b1c23a36e0b211fc93bbfdf1a093161b55"
+    },
+    {
+      "path": "scripts/verify-period-archive.cjs",
+      "status": "match",
+      "sourceContentSha256": "256419ede9c7ea51946e84c5a750151c6d8ac9725ec60580f786392062fea9ac"
+    },
+    {
+      "path": "scripts/verify-receivables.cjs",
+      "status": "match",
+      "sourceContentSha256": "1851d80730efb8233cb7a4d36115fe6686e7385d6f7f525e85fdae1cc7d31269"
+    },
+    {
+      "path": "scripts/verify-source-input-archive.cjs",
+      "status": "match",
+      "sourceContentSha256": "94cab31e34f88146a234e98e7853a26e5bf9958e317efe2c040e06bf23d51aed"
+    },
+    {
+      "path": "scripts/verify-source-recovery.cjs",
+      "status": "match",
+      "sourceContentSha256": "c910d9958c04c87bffae26f4efaf4bfa6805ba502fdcd68e165c580cbe2c4354"
+    },
+    {
+      "path": "scripts/verify-warm-periods.cjs",
+      "status": "match",
+      "sourceContentSha256": "73f113e4b2719d258fab5c49dbcb6a3bceb89f486090cbfaa48cef28724ed333"
+    },
+    {
+      "path": ".vercelignore",
+      "status": "missing-from-archive",
+      "sourceContentSha256": "9e3fc7440ac756c1e2e2761c7c67f67437172910fa77c872e5304e76c308dea0"
+    },
+    {
+      "path": "eslint.config.mjs",
+      "status": "match",
+      "sourceContentSha256": "fd8a0b42364a089c2ae20daa3dc80c08cc750d1692b3d6461d2f2b3e5611fc75"
+    },
+    {
+      "path": "next-env.d.ts",
+      "status": "match",
+      "sourceContentSha256": "a5b362b842d6843a25d6f881bca62b9e2ddc758234908ee4abfb0b63c8a93a55"
+    },
+    {
+      "path": "next.config.ts",
+      "status": "match",
+      "sourceContentSha256": "5a03339bd4d841f2f1ae4ef9de8978c68c87b53d169e43b10f9e4b8e8c9e1ce1"
+    },
+    {
+      "path": "package-lock.json",
+      "status": "match",
+      "sourceContentSha256": "ef4d7b7d46c22a7437b2a5b0d2ac98853ff2bbff6e4896ec3b0caf3898044441"
+    },
+    {
+      "path": "package.json",
+      "status": "match",
+      "sourceContentSha256": "ba7fea85082efff2e81eba3b7ebdeffeeb0b43091e7d6702e82caaee8dc5cd7c"
+    },
+    {
+      "path": "postcss.config.mjs",
+      "status": "match",
+      "sourceContentSha256": "a9543088acd44a3dc63c6d9171fe32cf2480fa89345e05bf27435b3a527e7cec"
+    },
+    {
+      "path": "proxy.ts",
+      "status": "match",
+      "sourceContentSha256": "324613689284ac187aaee64e7662076422b40a480d1d5f264fc3158271ad246c"
+    },
+    {
+      "path": "route.ts",
+      "status": "missing-from-archive",
+      "sourceContentSha256": "3f479c93a86c2ba73c9ab259efa1b40b98e082e6bdd358224c3859a765fb5cdf"
+    },
+    {
+      "path": "shadcn-tailwind-4.13.0.css",
+      "status": "match",
+      "sourceContentSha256": "1e595e88d95c6583d8d9d615a2b5ab0e785c24fc0b0c23e1d6fe2aa600a73710"
+    },
+    {
+      "path": "tsconfig.json",
+      "status": "match",
+      "sourceContentSha256": "5220f526b8aca83d3751f03b33e6fb05f0f472ec0521a20b7cacc9d0860925af"
+    },
+    {
+      "path": "vercel.json",
+      "status": "missing-from-archive",
+      "sourceContentSha256": "c2458a736f132bd6d3b102ec94104cb54cca06d535f6ff1beeaaaabd439d49a1"
+    }
+  ]
+}

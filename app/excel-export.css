@@ -1,0 +1,6 @@
+.excel-export { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: 10px 0; }
+.excel-export .excel-export-button { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 42px; padding: 9px 16px; border: 1px solid #16847b; border-radius: 8px; background: #fff; color: #126b63; font: inherit; font-weight: 600; cursor: pointer; }
+.excel-export .excel-export-button:hover { background: #eaf7f3; }
+.excel-export .excel-export-button:focus-visible { outline: 3px solid #16847b; outline-offset: 3px; }
+.excel-export .excel-export-button:disabled { opacity: .6; cursor: wait; }
+.excel-export .excel-export-error { flex-basis: 100%; margin: 0; padding: 12px 16px; background: #fff0f0; border: 1px solid #dc2626; border-radius: 8px; color: #b91c1c; }

@@ -144,10 +144,10 @@ async function askLogin(label, other) {
     process.stdout.write('Проверка логина: нужны 3–128 букв, цифр или символов _.@+-. Логины должны различаться.\n');
   }
 }
-async function askPassword(label) {
+export async function askPassword(label) {
   while (true) {
     let password = await ask(label, true);
-    if (!validPassword(password)) { password = ''; process.stdout.write('Проверка пароля: требуется ровно 4 символа.\n'); continue; }
+    if (!validPassword(password)) { password = ''; process.stdout.write('Проверка пароля: требуется ровно 4 цифры.\n'); continue; }
     let repeated = await ask('Повторите пароль: ', true);
     const left = Buffer.from(password), right = Buffer.from(repeated);
     const matches = left.length === right.length && timingSafeEqual(left, right);
