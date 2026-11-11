@@ -9,3 +9,4 @@ export interface Sql {
 }
 export function postgres(connectionString: string, options?: { statementTimeoutMs?: number; env?: NodeJS.ProcessEnv }): Sql;
 export function closePools(): Promise<void>;
+export function poolConfig(connectionString: string, options?: { statementTimeoutMs?: number }, env?: NodeJS.ProcessEnv): import('pg').PoolConfig;

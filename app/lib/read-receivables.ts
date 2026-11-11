@@ -1,3 +1,4 @@
+import { storageEnabled } from './postgres';
 import { sourceInput } from './source-input-archive';
 import 'server-only';
 import { date, number } from './source-values';
@@ -12,7 +13,7 @@ export async function resolveDebtSettings(settings = getSourceSettings()): Promi
   if (!settings.debtEnabled) throw new SheetsError('disabled', 'Источник дебиторки отключён (DEBT_ENABLED=false)');
   // Explicit debt ID always wins. Never fall back to the sales/cash workbook.
   if (settings.debtGoogleSheetId && settings.googleServiceAccountEmail && settings.googlePrivateKey) return settings;
-  if (process.env.DATABASE_URL) {
+  if (storageEnabled()) {
     const debt = (await listConnections()).filter(c => c.enabled && (c.type === 'debt' || (c.type === 'googleSheets' && c.bindings.some(b => b.section === 'debt' && b.dataset === 'debt'))) && (!settings.debtGoogleSheetId || c.config.spreadsheetId === spreadsheetId(settings.debtGoogleSheetId)));
     if (debt.length > 1) throw new SheetsError('ambiguous', 'Найдено несколько подключений задолженности. Укажите DEBT_GOOGLE_SHEET_ID для однозначного выбора.');
     if (debt.length === 1) {

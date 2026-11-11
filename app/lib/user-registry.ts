@@ -1,6 +1,6 @@
 import 'server-only';
 import { createHash, randomUUID } from 'node:crypto';
-import { postgres } from './postgres';
+import { postgres, storageEnabled } from './postgres';
 import { allSections, validSections } from './user-access';
 import type { Section } from './connections/model';
 
@@ -26,7 +26,7 @@ export function parseViewers(raw: string): Viewer[] {
     });
   } catch { throw new UserRegistryError('Некорректная конфигурация пользователей.'); }
 }
-export function registryConfigured() { return Boolean(process.env.DATABASE_URL); }
+export function registryConfigured() { return storageEnabled(); }
 function legacyRegistryConfigured() {
   return Boolean(process.env.DASHBOARD_USERS_VERCEL_TOKEN && process.env.DASHBOARD_USERS_PROJECT_ID && process.env.DASHBOARD_USERS_ENV_ID && process.env.DASHBOARD_USERS_TEAM_ID);
 }
@@ -52,12 +52,12 @@ async function legacyRaw(): Promise<string> {
   return hasRegistrySettings() ? (await vercelEnv('GET')).value as string : process.env.DASHBOARD_USERS_JSON || '[]';
 }
 function database() {
-  if (!process.env.DATABASE_URL) throw new UserRegistryError('Хранилище пользователей не настроено.');
-  return postgres(process.env.DATABASE_URL, { statementTimeoutMs: 8000 });
+  if (!storageEnabled()) throw new UserRegistryError('Хранилище пользователей не настроено.');
+  return postgres(process.env.DATABASE_URL || '', { statementTimeoutMs: 8000 });
 }
 export async function readRegistry() {
   try {
-    if (!process.env.DATABASE_URL) { const raw = await legacyRaw(); return { users: parseViewers(raw), version: version(raw) }; }
+    if (!storageEnabled()) { const raw = await legacyRaw(); return { users: parseViewers(raw), version: version(raw) }; }
     let rows = await database()`SELECT value, revision FROM mart_user_registry WHERE id=1`;
     if (!rows.length) { await initializeRegistry(); rows = await database()`SELECT value, revision FROM mart_user_registry WHERE id=1`; }
     if (!rows.length) throw new UserRegistryError();

@@ -1,3 +1,4 @@
+import { storageEnabled } from './postgres';
 import 'server-only';
 import type { DashboardData } from './dashboard-data';
 import { readFintabloPlans } from './fintablo';
@@ -5,7 +6,7 @@ import { listConnections, getConnection } from './connections/store';
 import { resolveValues } from './connections/merge';
 /** Explicit planning bindings, including unavailable ones, always take precedence. */
 export async function withNativeFintabloPlans(data: DashboardData, start: string, end: string): Promise<DashboardData> {
-  if (data.sections?.plan || data.planReceipts !== undefined || data.planPayments !== undefined || !process.env.DATABASE_URL) return data;
+  if (data.sections?.plan || data.planReceipts !== undefined || data.planPayments !== undefined || !storageEnabled()) return data;
   try {
     const connections = (await listConnections()).filter(c => c.enabled && c.type === 'fintablo');
     const values = await Promise.all(connections.map(async c => {

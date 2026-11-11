@@ -11,7 +11,7 @@
     "start": "next start",
     "start:codespaces": "PORT=3100 next start --hostname 0.0.0.0 --port 3100",
     "lint": "eslint .",
-    "test": "node tests/core.test.cjs && node tests/user-access.test.cjs && node tests/receivables.test.cjs && node tests/receivables-script.test.cjs && node tests/opiu.test.cjs && node tests/planning.test.cjs && node tests/wallet-percentage.test.cjs && node tests/period-balances.test.cjs && node tests/fintablo-period-balances.test.cjs",
+    "test": "node tests/core.test.cjs && node tests/user-access.test.cjs && node tests/receivables.test.cjs && node tests/receivables-script.test.cjs && node tests/opiu.test.cjs && node tests/planning.test.cjs && node tests/wallet-percentage.test.cjs && node tests/period-balances.test.cjs && node tests/fintablo-period-balances.test.cjs && node tests/backup.test.cjs",
     "setup-auth": "node scripts/setup-auth.mjs",
     "storage:check": "node scripts/storage.cjs check",
     "storage:migrate": "node scripts/storage.cjs migrate",
@@ -27,9 +27,11 @@
     "storage:tls-check": "node scripts/postgres-check.cjs",
     "test:postgres": "node --test tests/postgres.test.cjs",
     "test:postgres:wire": "node --test tests/postgres-wire.test.cjs",
-    "test:google-dashboard": "node tests/google-dashboard.test.cjs"
+    "test:google-dashboard": "node tests/google-dashboard.test.cjs",
+    "test:backup": "node tests/backup.test.cjs"
   },
   "dependencies": {
+    "@electric-sql/pglite": "0.5.16",
     "exceljs": "4.4.0",
     "googleapis": "^160.0.0",
     "lucide-react": "^0.468.0",

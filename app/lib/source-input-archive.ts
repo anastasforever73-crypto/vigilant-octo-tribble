@@ -1,7 +1,7 @@
 import 'server-only';
 import { AsyncLocalStorage } from 'node:async_hooks';
 import { randomUUID } from 'node:crypto';
-import { postgres } from './postgres';
+import { postgres, storageEnabled } from './postgres';
 import { contentHash, CALCULATION_VERSION, reportContentHash } from './archive-version';
 import { seal, unseal } from './connections/crypto';
 import { MemoryCache } from './memory-cache';
@@ -25,7 +25,7 @@ export async function withSourceArchive<T>(force: boolean, load: () => Promise<T
 export async function sourceInput<T>(identity: unknown, load: () => Promise<T>, complete: (value: T) => boolean = () => true): Promise<T> {
   const job = context.getStore();
   if (!job) return load();
-  if (!process.env.DATABASE_URL) { if (job.only) throw new Error('Архив входных данных недоступен'); return load(); }
+  if (!storageEnabled()) { if (job.only) throw new Error('Архив входных данных недоступен'); return load(); }
   const key = contentHash([CALCULATION_VERSION, identity]);
   const existing = job.pending.get(key);
   if (existing) return structuredClone(await existing) as T;

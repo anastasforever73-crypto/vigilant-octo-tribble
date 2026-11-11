@@ -1,3 +1,4 @@
+import { storageEnabled } from './postgres';
 import 'server-only';
 import { readFintablo, readFintabloPeriodBalances } from './fintablo';
 import { getSourceSettings } from './source-settings';
@@ -11,7 +12,7 @@ export async function readOperationalFinancial(day: string, end?: string): Promi
   const absent = missingMetric('FinTablo недоступен или для показателя нет включённой связи с источником.', 'FinTablo');
   const result: OperationalFinancial = { account: absent, wallet: absent, deposit: absent, total: absent, receipts: absent };
   try {
-    const saved = process.env.DATABASE_URL ? (await listConnections()).filter(c => c.enabled && c.type === 'fintablo') : [];
+    const saved = storageEnabled() ? (await listConnections()).filter(c => c.enabled && c.type === 'fintablo') : [];
     if (saved.length) {
       const values = await Promise.all(saved.map(async c => {
         try {

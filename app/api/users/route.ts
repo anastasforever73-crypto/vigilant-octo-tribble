@@ -15,7 +15,7 @@ export async function GET(request: NextRequest) {
   try {
     const registry = await readRegistry();
     const legacy = process.env.USER_LOGIN && !registry.users.some(user => user.login === process.env.USER_LOGIN) ? { login: process.env.USER_LOGIN, legacy: true } : null;
-    return json({ users: registry.users.map(publicViewer), version: registry.version, writable: registryConfigured() && Boolean(process.env.DATABASE_URL), legacy });
+    return json({ users: registry.users.map(publicViewer), version: registry.version, writable: registryConfigured(), legacy });
   } catch (error) { return failure(error); }
 }
 export async function POST(request: NextRequest) {

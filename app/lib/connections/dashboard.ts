@@ -1,3 +1,4 @@
+import { storageEnabled } from '../postgres';
 import { withSourceArchive } from '../source-input-archive';
 import { adapters } from './adapters';
 import { getConnection } from './store';
@@ -7,7 +8,7 @@ import { listConnections, snapshots, recordSync } from './store';
 import { syncConnection } from './sync';
 import { composeConnections } from './compose';
 export async function withConnections(base: DashboardData, start: string, end: string, refresh = false, readOnly = false) {
-  if (!process.env.DATABASE_URL) return base;
+  if (!storageEnabled()) return base;
   try {
     const connections = await listConnections();
     const cached = await snapshots(start, end);

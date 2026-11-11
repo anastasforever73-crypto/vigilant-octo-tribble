@@ -3,12 +3,12 @@ import { bindingKey } from './merge';
 import { contentHash } from '../archive-version';
 import 'server-only';
 import { randomUUID } from 'node:crypto';
-import { postgres } from '../postgres';
+import { postgres, temporaryStorage } from '../postgres';
 import { seal, unseal } from './crypto';
 import { storageConfiguration, storageFailure } from './storage-health';
 import { conflictIssues, maskedSecrets, ConnectionError, type Binding, type Connection, type ConnectionInput, type Secrets, type StoredData, type StorageStatus } from './model';
 function database() {
-  const issue = storageConfiguration();
+  const issue = temporaryStorage() ? undefined : storageConfiguration();
   if (issue) throw new ConnectionError(issue.code!, issue.message, 503);
   return postgres(process.env.DATABASE_URL!, { statementTimeoutMs: 15000 });
 }
@@ -20,6 +20,7 @@ function dbError(error: unknown): never {
   throw new ConnectionError(issue.code!, issue.message, 503);
 }
 export async function storageStatus(): Promise<StorageStatus> {
+  if (temporaryStorage()) { await database()`SELECT 1`; return { available: true, mode: 'temporary', checks: { database: 'ready', migration: 'ready', encryption: 'ready' }, message: 'Временное хранилище в памяти. После перезапуска данные исчезнут. Скачивайте резервную копию после изменений.' }; }
   const checks: NonNullable<StorageStatus['checks']> = { database: 'unchecked', migration: 'unchecked', encryption: 'unchecked' };
   const key = process.env.CONNECTIONS_ENCRYPTION_KEY;
   checks.encryption = !key ? 'missing' : /^[a-f0-9]{64}$/i.test(key) && key !== process.env.AUTH_SECRET ? 'ready' : 'error';

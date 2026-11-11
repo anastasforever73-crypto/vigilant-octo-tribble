@@ -48,7 +48,7 @@ const sql = async (strings, ...v) => {
 const originalLoad = Module._load;
 Module._load = function(name, parent, main) {
   if (name === 'server-only') return {};
-  if (name.endsWith('/postgres') || name.endsWith('/lib/postgres.cjs')) return { postgres: () => sql };
+  if (name.endsWith('/postgres') || name.endsWith('/lib/postgres.cjs')) return { postgres: () => sql, environmentOverride: () => null, storageEnabled: () => Boolean(process.env.DATABASE_URL) || process.env.TEMPORARY_STORAGE_ENABLED === "true", temporaryStorage: () => !process.env.DATABASE_URL && process.env.TEMPORARY_STORAGE_ENABLED === "true" };
   if (name.startsWith('@/')) name = require('node:path').join(process.cwd(), name.slice(2));
   return originalLoad.call(this, name, parent, main);
 };

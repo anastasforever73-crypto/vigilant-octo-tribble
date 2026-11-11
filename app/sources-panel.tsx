@@ -1,4 +1,5 @@
 'use client';
+import BackupPanel from './backup-panel';
 import WalletPercentageSettings from './wallet-percentage-settings';
 import type { Operational } from './lib/operational';
 import { useEffect, useRef, useState } from 'react';
@@ -21,6 +22,7 @@ export function SourceStatusCards({ sources }: { sources: Record<string, SourceS
 export default function SourcesPanel({ role, sources, refresh, busy, start, end, managers, financial, refreshCalculations, showWalletSettings = true }: { showWalletSettings?: boolean; refreshCalculations: () => Promise<void>; financial?: Operational; role: Role; sources: Record<string, SourceStatus>; refresh: () => void; busy: boolean; start: string; end: string; managers: string[] }) {
   return <section className="admin-sources" aria-label={role === 'admin' ? 'Источники данных' : 'Статус источников'}>
     <div className="heading"><div><span>{role === 'admin' ? 'Администрирование' : 'Состояние данных'}</span><h2>{role === 'admin' ? 'Источники данных' : 'Статус источников'}</h2></div></div>
+    {role === 'admin' && showWalletSettings && <BackupPanel/>}
     {role === 'admin' && showWalletSettings && <WalletPercentageSettings refresh={refreshCalculations} financial={financial}/>}
     <SourceStatusCards sources={sources}/>
     {role === 'admin' && <AdminConnections refresh={refresh} busy={busy} start={start} end={end} managers={managers}/>}

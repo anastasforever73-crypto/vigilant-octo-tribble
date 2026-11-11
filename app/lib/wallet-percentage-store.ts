@@ -1,12 +1,12 @@
 import 'server-only';
-import { postgres } from './postgres';
+import { postgres, storageEnabled } from './postgres';
 import { parseWalletPercentage, type WalletPercentageRule } from './wallet-percentage';
 function database() {
-  if (!process.env.DATABASE_URL) throw new Error('Для сохранения процента подключите базу данных.');
-  return postgres(process.env.DATABASE_URL, { statementTimeoutMs: 15000 });
+  if (!storageEnabled()) throw new Error('Для сохранения процента подключите базу данных.');
+  return postgres(process.env.DATABASE_URL || '', { statementTimeoutMs: 15000 });
 }
 export async function readWalletPercentage(): Promise<WalletPercentageRule[]> {
-  if (!process.env.DATABASE_URL) return [];
+  if (!storageEnabled()) return [];
   try {
     const rows = await database()`SELECT to_char(effective_from, 'YYYY-MM-DD') AS date, percent FROM mart_wallet_percentage ORDER BY effective_from`;
     return rows.map(r => ({ effectiveFrom: String(r.date), percent: Number(r.percent) }));

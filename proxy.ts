@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { requestSession, json } from '@/app/lib/auth';
+import { requestSession, json, temporaryProxySession, SESSION_COOKIE } from '@/app/lib/auth';
 import { canView } from '@/app/lib/user-access';
 export async function proxy(request: NextRequest) {
   const path = request.nextUrl.pathname;
   if (path === '/login' || path === '/api/auth/login') return NextResponse.next();
-  const session = await requestSession(request);
+  const session = temporaryProxySession(request.cookies.get(SESSION_COOKIE)?.value) || await requestSession(request);
   if (!session) {
     if (path.startsWith('/api/')) return json({ error: 'Требуется вход' }, 401);
     return NextResponse.redirect(new URL('/login', request.url));

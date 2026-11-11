@@ -1,7 +1,7 @@
 import { MemoryCache } from './memory-cache';
 import 'server-only';
 import { randomUUID } from 'node:crypto';
-import { postgres } from './postgres';
+import { postgres, storageEnabled } from './postgres';
 import { seal, unseal } from './connections/crypto';
 import { CALCULATION_VERSION, contentHash, reportContentHash } from './archive-version';
 import type { SourceProbe } from './archive-source-probe';
@@ -14,8 +14,8 @@ export const CURRENT_CACHE_MAX_AGE = 5 * 60 * 1000;
 export type ArchiveInfo = { mode: 'archive' | 'live'; createdAt?: string; observedAt?: string; sourceVersion?: string; cacheVersion?: string; message?: string; retention?: 'historical' | 'current'; checkedAt?: string; verifiedAt?: string; verification?: 'checked' | 'unconfirmed' };
 export type ArchiveEntry = { archive_key: string; kind: string; period_start: string; period_end: string; created_at: string | null; observed_at: string | null; lease_until: string | null; last_error: string | null; schema_version: number | null; calculation_version: string | null; verified_at: string | null };
 function db() {
-  if (!process.env.DATABASE_URL) throw new Error('Архив: PostgreSQL не настроен.');
-  return postgres(process.env.DATABASE_URL, { statementTimeoutMs: 15000 });
+  if (!storageEnabled()) throw new Error('Архив: PostgreSQL не настроен.');
+  return postgres(process.env.DATABASE_URL || '', { statementTimeoutMs: 15000 });
 }
 type SpecIdentity = { archiveOnly?: boolean; kind: string; start: string; end: string; comparisonStart?: string; retention?: 'historical' | 'current'; calculationVersion?: string };
 export function retention(spec: SpecIdentity, today = moscowToday()) {

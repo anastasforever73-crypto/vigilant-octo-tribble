@@ -25,7 +25,7 @@ export type Secrets = { token?: string; serviceAccountEmail?: string; privateKey
 export type Inspection = { sheets?: { title: string; columns: number }[]; headers?: { index: number; label: string }[]; accounts?: { id: number; name: string }[]; pipelines?: { id: string; name: string }[]; managers?: { id: string; name: string }[]; fields?: { key: string; label: string }[]; message: string; checkedAt: string };
 export type StoredData = Partial<Record<Dataset, unknown>> & { syncedAt?: string; byBinding?: Record<string, unknown> };
 export type ReadinessCheck = 'ready' | 'missing' | 'error' | 'unchecked';
-export type StorageStatus = { mode?: 'environment' | 'database'; available: boolean; message: string; code?: string; checks?: { database: ReadinessCheck; migration: ReadinessCheck; encryption: ReadinessCheck } };
+export type StorageStatus = { mode?: 'environment' | 'database' | 'temporary'; available: boolean; message: string; code?: string; checks?: { database: ReadinessCheck; migration: ReadinessCheck; encryption: ReadinessCheck } };
 export const SECRET_MASK = '••••••••';
 export function maskedSecrets(fields: readonly string[]): Partial<Record<keyof Secrets, string>> {
   return Object.fromEntries(['token', 'serviceAccountEmail', 'privateKey'].filter(field => fields.includes(field)).map(field => [field, SECRET_MASK]));

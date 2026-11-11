@@ -1,8 +1,10 @@
+import { temporaryStorage, memoryKey } from '../postgres';
 import 'server-only';
 import { createCipheriv, createDecipheriv, randomBytes } from 'node:crypto';
 import { ConnectionError } from './model';
-export function encryptionConfigured() { return /^[a-f0-9]{64}$/i.test(process.env.CONNECTIONS_ENCRYPTION_KEY || ''); }
+export function encryptionConfigured() { return temporaryStorage() || /^[a-f0-9]{64}$/i.test(process.env.CONNECTIONS_ENCRYPTION_KEY || ''); }
 function key() {
+  if (temporaryStorage()) return memoryKey();
   if (!encryptionConfigured()) throw new ConnectionError('storage_required', 'Нужен серверный ключ шифрования подключений', 503);
   return Buffer.from(process.env.CONNECTIONS_ENCRYPTION_KEY!, 'hex');
 }

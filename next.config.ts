@@ -3,6 +3,7 @@ import type { NextConfig } from "next";
 import { codespaceOrigin } from './app/lib/request-origin';
 
 const nextConfig: NextConfig = {
+  serverExternalPackages: ['@electric-sql/pglite'],
   allowedDevOrigins: ['127.0.0.1', ...(codespaceOrigin() ? [new URL(codespaceOrigin()!).hostname] : [])],
   async headers() {
     return ['/login', '/api/auth/:path*'].map(source => ({

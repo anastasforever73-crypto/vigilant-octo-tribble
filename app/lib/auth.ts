@@ -1,3 +1,4 @@
+import { temporaryStorage } from './postgres';
 import 'server-only';
 import { validAccountPassword, validLoginPassword } from './password-policy.mjs';
 import { createHmac, randomBytes, scrypt, timingSafeEqual } from 'node:crypto';
@@ -118,4 +119,17 @@ export async function verifyPassword(password: string, hash: string, allowLegacy
   const parts = hash.split('$');
   const derived = await new Promise<Buffer>((resolve, reject) => scrypt(password, Buffer.from(parts[4], 'hex'), 64, { N: 32768, r: 8, p: 3, maxmem: 64 * 1024 * 1024 }, (error, key) => error ? reject(error) : resolve(key)));
   return timingSafeEqual(derived, Buffer.from(parts[5], 'hex'));
+}
+
+// The proxy can run in a separate worker. It verifies the signature only in
+// temporary mode; pages and API guards still resolve the live registry.
+export function temporaryProxySession(value?: string): Session | null {
+  if (!temporaryStorage() || !secret() || !value || value.length > 2048) return null;
+  try {
+    const [payload, mac, extra] = value.split('.');
+    if (!payload || !mac || extra || !equal(mac, signature(payload))) return null;
+    const claims = JSON.parse(Buffer.from(payload, 'base64url').toString());
+    if (!['admin', 'user'].includes(claims.role) || !Number.isInteger(claims.exp) || claims.exp <= Date.now()/1000 || claims.exp > Date.now()/1000 + lifetime) return null;
+    return { ...claims, sections: [...allSections] };
+  } catch { return null; }
 }

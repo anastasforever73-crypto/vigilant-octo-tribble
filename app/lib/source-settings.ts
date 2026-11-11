@@ -1,3 +1,4 @@
+import { environmentOverride } from './postgres';
 import 'server-only';
 export type SourceSettings = {
   fintabloBaseUrl: string; fintabloToken: string;
@@ -9,15 +10,16 @@ export type SourceSettings = {
 };
 export type FintabloSettings = Pick<SourceSettings, 'fintabloBaseUrl' | 'fintabloToken'>;
 export function getSourceSettings(): SourceSettings {
+  const env = { ...process.env, ...environmentOverride() };
   return {
-    fintabloBaseUrl: process.env.FINTABLO_API_URL || process.env.FINTABLO_API_BASE_URL || '', fintabloToken: process.env.FINTABLO_API_TOKEN || '',
-    googleSheetId: process.env.GOOGLE_SHEET_ID || '', googleServiceAccountEmail: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL || '', googlePrivateKey: process.env.GOOGLE_PRIVATE_KEY || '',
-    debtGoogleSheetId: process.env.DEBT_GOOGLE_SHEET_ID || '',
-    debtTransitSheet: process.env.DEBT_TRANSIT_SHEET || 'Транзит', debtStockSheet: process.env.DEBT_STOCK_SHEET || 'Склад',
-    cashSheet: process.env.CASH_SHEET || 'ДДС недельный - по статьям', ordersSheet: process.env.ORDERS_SHEET || 'техн.лист плита - заказы',
-    debtorSheet: process.env.DEBTOR_SHEET || 'дебиторка (расчет)', factorySheet: process.env.FACTORY_SHEET || 'Кредиторка по Заводу (1с)',
-    walletSheet: process.env.WALLET_SHEET || 'Техн.лист (кошелек)', accountSheet: process.env.ACCOUNT_SHEET || 'техн рс остатки', debtSheet: process.env.DEBT_SHEET || 'Лист6',
-    googleEnabled: process.env.GOOGLE_SHEETS_ENABLED !== 'false', fintabloEnabled: process.env.FINTABLO_ENABLED !== 'false', debtEnabled: process.env.DEBT_ENABLED !== 'false',
+    fintabloBaseUrl: env.FINTABLO_API_URL || env.FINTABLO_API_BASE_URL || '', fintabloToken: env.FINTABLO_API_TOKEN || '',
+    googleSheetId: env.GOOGLE_SHEET_ID || '', googleServiceAccountEmail: env.GOOGLE_SERVICE_ACCOUNT_EMAIL || '', googlePrivateKey: env.GOOGLE_PRIVATE_KEY || '',
+    debtGoogleSheetId: env.DEBT_GOOGLE_SHEET_ID || '',
+    debtTransitSheet: env.DEBT_TRANSIT_SHEET || 'Транзит', debtStockSheet: env.DEBT_STOCK_SHEET || 'Склад',
+    cashSheet: env.CASH_SHEET || 'ДДС недельный - по статьям', ordersSheet: env.ORDERS_SHEET || 'техн.лист плита - заказы',
+    debtorSheet: env.DEBTOR_SHEET || 'дебиторка (расчет)', factorySheet: env.FACTORY_SHEET || 'Кредиторка по Заводу (1с)',
+    walletSheet: env.WALLET_SHEET || 'Техн.лист (кошелек)', accountSheet: env.ACCOUNT_SHEET || 'техн рс остатки', debtSheet: env.DEBT_SHEET || 'Лист6',
+    googleEnabled: env.GOOGLE_SHEETS_ENABLED !== 'false', fintabloEnabled: env.FINTABLO_ENABLED !== 'false', debtEnabled: env.DEBT_ENABLED !== 'false',
   };
 }
 export function getFintabloSettings(): FintabloSettings { const s = getSourceSettings(); return { fintabloBaseUrl: s.fintabloBaseUrl, fintabloToken: s.fintabloToken }; }

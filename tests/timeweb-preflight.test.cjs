@@ -26,7 +26,7 @@ async function run({ collision = false, wrongKey = false, missingTable = false }
   };
   const localProcess = { env, cwd: () => process.cwd(), exitCode: 0, exit() { throw Error('Unexpected exit'); } };
   const context = { AbortSignal, process: localProcess, console: { log(value) { logs.push(value); } }, require(name) {
-    if (name.endsWith('/postgres') || name.endsWith('/lib/postgres.cjs')) return { postgres: () => sql };
+    if (name.endsWith('/postgres') || name.endsWith('/lib/postgres.cjs')) return { postgres: () => sql, environmentOverride: () => null, storageEnabled: () => Boolean(process.env.DATABASE_URL) || process.env.TEMPORARY_STORAGE_ENABLED === "true", temporaryStorage: () => !process.env.DATABASE_URL && process.env.TEMPORARY_STORAGE_ENABLED === "true" };
     if (name === '@next/env') return { loadEnvConfig() {} };
     return require(name);
   } };
