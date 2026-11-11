@@ -26,6 +26,27 @@ export default function SourcesPanel({ role, sources, refresh, busy, start, end,
     {role === 'admin' && <AdminConnections refresh={refresh} busy={busy} start={start} end={end} managers={managers}/>}
   </section>;
 }
+const environmentSources = [
+  { id: 'google', label: 'Google Sheets', fields: ['GOOGLE_SHEET_ID', 'GOOGLE_SERVICE_ACCOUNT_EMAIL', 'GOOGLE_PRIVATE_KEY', 'GOOGLE_SHEETS_ENABLED=true'], note: 'Для основной таблицы. У сервисного аккаунта должен быть доступ «Читатель». Этот Google-ключ также используется для ОПиУ и дебиторки.' },
+  { id: 'debt', label: 'Дебиторка', fields: ['DEBT_GOOGLE_SHEET_ID', 'DEBT_TRANSIT_SHEET=Заказы', 'DEBT_STOCK_SHEET=Склад', 'DEBT_ENABLED=true'], note: 'Для таблицы задолженности. Используется тот же сервисный аккаунт Google. Имена листов должны точно совпадать с таблицей.' },
+  { id: 'fintablo', label: 'Финтабло', fields: ['FINTABLO_API_URL=https://api.fintablo.ru', 'FINTABLO_API_TOKEN', 'FINTABLO_ENABLED=true'], note: 'Добавьте действующий API-токен Финтабло. После сохранения переменных запустите деплой приложения.' },
+];
+function EnvironmentSourceSetup({ refresh, busy }: { refresh: () => void; busy: boolean }) {
+  const [selected, setSelected] = useState<string | null>(null);
+  const source = environmentSources.find(item => item.id === selected);
+  return <section className="panel" aria-label="Подключение источников без базы">
+    <h3>Подключение источников</h3>
+    <p>Сейчас источники работают через закрытые настройки Timeweb. Выберите источник, чтобы открыть инструкцию подключения. Реквизиты сохраняются в Timeweb; для редактирования прямо в дашборде нужна база данных.</p>
+    <div className="settings-actions">{environmentSources.map(item => <button key={item.id} type="button" aria-expanded={selected === item.id} aria-controls="environment-source-instructions" onClick={() => setSelected(item.id)}>Настроить {item.label}</button>)}<button type="button" disabled={busy} onClick={refresh}>{busy ? 'Проверяем данные…' : 'Проверить источники'}</button></div>
+    <div id="environment-source-instructions" hidden={!source}>{source && <>
+      <h4>{source.label}</h4><p>{source.note}</p>
+      <p>В разделе «Переменные» добавьте или измените следующие настройки:</p>
+      <ul>{source.fields.map(field => <li key={field}><code>{field}</code></li>)}</ul>
+      <p>Сохраните настройки, подтвердите деплой, дождитесь его завершения и обновите дашборд. Существующие настройки входа оставьте без изменений.</p>
+      <a className="primary" href="https://timeweb.cloud/my/apps/286423/settings" target="_blank" rel="noopener noreferrer">Открыть настройки Timeweb ↗</a>
+    </>}</div>
+  </section>;
+}
 function AdminConnections({ refresh, busy, start, end, managers }: { refresh: () => void; busy: boolean; start: string; end: string; managers: string[] }) {
   const [storage, setStorage] = useState<StorageStatus>({ available: false, message: 'Проверяем хранилище подключений…' });
   const [connections, setConnections] = useState<Connection[]>([]);
@@ -59,13 +80,14 @@ function AdminConnections({ refresh, busy, start, end, managers }: { refresh: ()
     finally { setPending(''); }
   }
   const readiness = <section className="panel" aria-label="Готовность системы">
-    <h3>{checking ? 'Проверяем готовность системы' : storage.available ? 'Система готова к подключению источников' : 'Требуется первоначальная настройка хранилища'}</h3>
-    <p role="status">{checking ? 'Проверяем базу, миграцию и серверный ключ…' : storage.message}</p>
+    <h3>{checking ? 'Проверяем готовность системы' : storage.available ? 'Система готова к подключению источников' : storage.mode === 'environment' ? 'Источники работают без базы данных' : 'Требуется первоначальная настройка хранилища'}</h3>
+    <p role="status">{checking ? 'Проверяем базу, миграцию и серверный ключ…' : storage.mode === 'environment' ? 'Настройка подключений доступна через Timeweb. Архивы, история ставок и управление подключениями внутри дашборда станут доступны после подключения базы.' : storage.message}</p>
     <ul className="readiness-checks">{([['database', 'База подключена'], ['migration', 'Миграция применена'], ['encryption', 'Ключ шифрования задан']] as const).map(([key, label]) => <li key={key}><b>{label}</b><span>{checking ? 'Проверяется' : ({ ready: 'Готово', missing: 'Не настроено', error: 'Ошибка', unchecked: 'Не проверено' }[storage.checks?.[key] || 'unchecked'])}</span></li>)}</ul>
-    {!checking && !storage.available && <p>Техническая настройка выполняется один раз: подключите базу, задайте серверный ключ и примените миграцию. После этого все источники добавляются и управляются здесь, без переходов в Vercel.</p>}
+    {!checking && !storage.available && storage.mode !== 'environment' && <p>Техническая настройка выполняется один раз: подключите базу, задайте серверный ключ и примените миграцию. После этого все источники добавляются и управляются здесь, без переходов в Vercel.</p>}
     <button type="button" disabled={checking} onClick={() => { setChecking(true); setVersion(v => v + 1); }}>Проверить готовность системы</button>
   </section>;
-  if (checking || !storage.available) return readiness;
+  if (checking) return readiness;
+  if (!storage.available) return <>{storage.mode === 'environment' && <EnvironmentSourceSetup refresh={refresh} busy={busy}/>} {readiness}</>;
   return <>
     {readiness}
     <section className="panel" id="planning-sources"><h3>Источники планирования</h3><p>Подключите Google Sheets с планами поступлений и списаний. Для каждого направления назначьте лист и колонки: плановая дата, категория, сумма. Период выбирается в разделе «Планирование».</p><div className="settings-actions"><button className="primary" type="button" onClick={() => setEditing('new-plan')}>Добавить источник планов</button>{connections.filter(c => c.type === 'googleSheets').map(c => <button key={c.id} type="button" onClick={() => setEditing(c)}>Добавить планы в «{c.name}»</button>)}</div></section>

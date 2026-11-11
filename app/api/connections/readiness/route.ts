@@ -5,6 +5,6 @@ import { failure } from '@/app/lib/connections/http';
 export const runtime = 'nodejs';
 export async function GET(request: NextRequest) {
   const denied = await guard(request, 'admin'); if (denied) return denied;
-  try { return json(await storageStatus()); }
+  try { return json({ ...await storageStatus(), mode: process.env.DATABASE_URL ? 'database' : 'environment' }); }
   catch (error) { return failure(error); }
 }
