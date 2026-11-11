@@ -26,7 +26,8 @@
     "recovery:import": "node scripts/timeweb-recovery.cjs import",
     "storage:tls-check": "node scripts/postgres-check.cjs",
     "test:postgres": "node --test tests/postgres.test.cjs",
-    "test:postgres:wire": "node --test tests/postgres-wire.test.cjs"
+    "test:postgres:wire": "node --test tests/postgres-wire.test.cjs",
+    "test:google-dashboard": "node tests/google-dashboard.test.cjs"
   },
   "dependencies": {
     "exceljs": "4.4.0",

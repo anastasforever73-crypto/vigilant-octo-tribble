@@ -34,7 +34,7 @@ async function loadDashboardSources(params: URLSearchParams, refresh = false, re
   const day = yesterdayMoscow();
   const [fintablo, google, debt, financial] = await Promise.all([
     read('fintablo', 'Финтабло', s.fintabloEnabled, Boolean(s.fintabloBaseUrl && s.fintabloToken), async () => fintabloToDashboardData(await readFintablo(p.comparisonStart, p.end))),
-    read('googleSheets', 'Google Sheets', s.googleEnabled, Boolean(credentials && s.googleSheetId), () => readGoogleSheets(p.end)),
+    read('googleSheets', 'Google Sheets', s.googleEnabled, Boolean(credentials && s.googleSheetId), () => readGoogleSheets(p.end, s, p.comparisonStart)),
     readReceivables(s),
     readOperationalFinancial(day, p.end),
   ]);

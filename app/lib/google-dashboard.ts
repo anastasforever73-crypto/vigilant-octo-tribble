@@ -1,10 +1,15 @@
 import { sourceInput } from './source-input-archive';
 import 'server-only';
+import { NLPK_HISTORY_SHEET, parseNlpkHistory, nlpkHistoryAt } from './nlpk-payables';
 import type { DashboardData } from './dashboard-data';
 import { getSourceSettings } from './source-settings';
 import { date, number, text } from './source-values';
 import { inspectSheets, range, sheetsClient, spreadsheetId, SheetsError } from './google-sheets';
 type Row = unknown[];
+// Delivery dates are optional annotations; unparseable text does not change order amounts.
+function deliveryDate(value: unknown) {
+  try { return date(value); } catch { return ''; }
+}
 function latestBalance(rows: Row[], end: string, balanceColumn: number) {
   return rows
     .map((row) => ({ date: date(row[0]), value: number(row[balanceColumn]) }))
@@ -12,7 +17,7 @@ function latestBalance(rows: Row[], end: string, balanceColumn: number) {
     .sort((a, b) => b.date.localeCompare(a.date))[0]?.value ;
 }
 
-export async function readGoogleSheets(end: string, settings = getSourceSettings()): Promise<DashboardData> {
+export async function readGoogleSheets(end: string, settings = getSourceSettings(), start = ''): Promise<DashboardData> {
   if (!settings.googleEnabled) throw new SheetsError('disabled', 'Источник отключён');
   const input = await sourceInput(['google-dashboard', settings], async () => {
   const inspection = await inspectSheets(settings);
@@ -33,13 +38,16 @@ export async function readGoogleSheets(end: string, settings = getSourceSettings
   return { byRange, updatedAt: new Date().toISOString() };
   });
   const { byRange } = input;
+  const inPeriod = (row: Row, column: number) => { const day = date(row[column]); return Boolean(day && day >= start && day <= end); };
   const cash = byRange.cash
+    .filter(row => inPeriod(row, 4))
     .map((row) => ({ date: date(row[4]), amount: number(row[5]), source: text(row[6]), counterparty: text(row[8]), article: text(row[10]), flow: text(row[11]) }))
     .filter((row) => row.date && row.amount && !/внутрен|перевод между|резерв/i.test(`${row.article} ${row.counterparty}`));
   const orders = byRange.orders
-    .map((row) => ({ date: date(row[0]), order: text(row[1]), payer: text(row[2]), client: text(row[3]), region: text(row[4]), product: text(row[6]), qty: number(row[7]), paymentType: text(row[9]), revenue: number(row[11]), manager: text(row[17]), department: text(row[18]), volume: number(row[20]), paid: number(row[21]), debt: number(row[22]), delivery: date(row[14]) }))
+    .filter(row => inPeriod(row, 0))
+    .map((row) => ({ date: date(row[0]), order: text(row[1]), payer: text(row[2]), client: text(row[3]), region: text(row[4]), product: text(row[6]), qty: number(row[7]), paymentType: text(row[9]), revenue: number(row[11]), manager: text(row[17]), department: text(row[18]), volume: number(row[20]), paid: number(row[21]), debt: number(row[22]), delivery: deliveryDate(row[14]) }))
     .filter((row) => row.date && (row.revenue || row.debt));
-  const factoryRows = byRange.factory
+  const factoryRows = settings.factorySheet === NLPK_HISTORY_SHEET ? nlpkHistoryAt(parseNlpkHistory(byRange.factory, 4).history, end) : byRange.factory
     .map((row) => ({ date: date(row[0]), balance: number(row[6]) }))
     .filter((row) => row.date && row.date <= end)
     .sort((a, b) => a.date.localeCompare(b.date));

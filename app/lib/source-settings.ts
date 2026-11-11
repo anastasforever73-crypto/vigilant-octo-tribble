@@ -21,7 +21,7 @@ export function getSourceSettings(): SourceSettings {
   };
 }
 export function getFintabloSettings(): FintabloSettings { const s = getSourceSettings(); return { fintabloBaseUrl: s.fintabloBaseUrl, fintabloToken: s.fintabloToken }; }
-export const storageMessage = 'Постоянное серверное хранилище не настроено. Подключения читаются из переменных окружения Vercel. Сохранение и отключение из интерфейса станут доступны после подключения PostgreSQL с шифрованием реквизитов и журналом синхронизаций.';
+export const storageMessage = 'Постоянное серверное хранилище не настроено. Подключения читаются из закрытых переменных окружения сервера. Сохранение и отключение из интерфейса станут доступны после подключения PostgreSQL с шифрованием реквизитов и журналом синхронизаций.';
 
 /** Logical calculation sources stay stable; physical sheet names are explicit. */
 export function debtSourceSheets(settings: Pick<SourceSettings, 'debtTransitSheet' | 'debtStockSheet'>) {
