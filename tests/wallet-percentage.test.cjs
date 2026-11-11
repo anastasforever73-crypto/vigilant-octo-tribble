@@ -40,8 +40,11 @@ test('API save/read recalculates all dependent amounts and enforces authorizatio
  const store=require('../app/lib/wallet-percentage-store.ts');
  const auth=require('../app/lib/auth.ts');
  const savedGuard=auth.guard,savedRead=store.readWalletPercentage,savedWrite=store.saveWalletPercentage;
- let isAdmin=true;
- auth.guard=async()=>isAdmin?null:new Response(null,{status:403});
+ let role='admin', hasOverview=true;
+ auth.guard=async(request,requiredRole,section)=>{
+  assert.equal(requiredRole,undefined);assert.equal(section,'overview');
+  return !role?new Response(null,{status:401}):hasOverview?null:new Response(null,{status:403});
+ };
  store.readWalletPercentage=async()=>saved;
  store.saveWalletPercentage=async value=>{const rule=parseWalletPercentage(value);saved=[rule];return rule;};
  try {
@@ -55,7 +58,15 @@ test('API save/read recalculates all dependent amounts and enforces authorizatio
   const after=withPlanningIndicators(withWalletPercentage(base,rules,'2026-10-07'),'2026-10-01','2026-10-31');
   assert.equal(after.operational.wallet.value,110000);assert.equal(after.operational.total.value,310000);assert.equal(after.operational.operationalBalance.value,340000);
   assert.equal((await route.POST(request({percent:101,effectiveFrom:'2026-10-07'}))).status,422);
-  isAdmin=false;assert.equal((await route.POST(request({percent:10,effectiveFrom:'2026-10-07'}))).status,403);
+  role='user';
+  assert.equal((await route.GET(new Request('http://localhost'))).status,200);
+  assert.equal((await route.POST(request({percent:12,effectiveFrom:'2026-10-07'}))).status,200);
+  assert.equal(saved[0].percent,12);
+  hasOverview=false;
+  assert.equal((await route.GET(new Request('http://localhost'))).status,403);
+  assert.equal((await route.POST(request({percent:10,effectiveFrom:'2026-10-07'}))).status,403);
+  role=null;
+  assert.equal((await route.POST(request({percent:10,effectiveFrom:'2026-10-07'}))).status,401);
  }finally{auth.guard=savedGuard;store.readWalletPercentage=savedRead;store.saveWalletPercentage=savedWrite;}
 });
 test('dashboard read recalculates archived facts with latest saved rule and changes client cache version',async()=>{
