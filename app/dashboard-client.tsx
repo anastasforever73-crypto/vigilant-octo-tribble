@@ -522,24 +522,30 @@ export default function Dashboard({ cacheScope, role, initialTab = 'overview', a
   useEffect(() => {
     let active = true;
     const force = refresh > appliedRefresh.current && role === 'admin';
-    appliedRefresh.current = refresh;
-    queryCache.load(start, end, { force }).then(payload => {
-      if (active && payload) setResult({ key, data: payload });
-    }).catch((error: unknown) => {
-      if (active) setResult({ key, data: emptyData, error: error instanceof Error ? error.message : 'Сервер недоступен' });
-    });
-    // Idle, bounded prefetch reads existing archives only. Obsolete results cannot replace selection.
-    const prefetch = window.setTimeout(() => {
-      if ((navigator as Navigator & { connection?: { saveData?: boolean } }).connection?.saveData) return;
-      for (const p of neighbourMonths(start)) queryCache.load(p.start, p.end, { prefetch: true }).catch(() => {});
-    }, 1200);
+    // Coalesce date edits before starting expensive work; cached selections stay immediate.
+    let prefetch: number | undefined;
+    const loadTimer = window.setTimeout(() => {
+      if (!active) return;
+      appliedRefresh.current = refresh;
+      queryCache.load(start, end, { force }).then(payload => {
+        if (!active || !payload) return;
+        setResult({ key, data: payload });
+        // Prefetch only after the selected period finishes, without competing for its database pool.
+        prefetch = window.setTimeout(() => {
+          if (!active || (navigator as Navigator & { connection?: { saveData?: boolean } }).connection?.saveData) return;
+          for (const p of neighbourMonths(start)) queryCache.load(p.start, p.end, { prefetch: true }).catch(() => {});
+        }, 1200);
+      }).catch((error: unknown) => {
+        if (active) setResult({ key, data: emptyData, error: error instanceof Error ? error.message : 'Сервер недоступен' });
+      });
+    }, force || queryCache.get(start, end) ? 0 : 300);
     const timer = window.setInterval(() => {
       if (document.visibilityState !== 'visible') return;
       queryCache.load(start, end, { revalidate: true }).then(payload => {
         if (active && payload) setResult({ key, data: payload });
       }).catch(() => {});
     }, 60000);
-    return () => { active = false; window.clearTimeout(prefetch); window.clearInterval(timer); };
+    return () => { active = false; window.clearTimeout(loadTimer); window.clearTimeout(prefetch); window.clearInterval(timer); };
   }, [key, start, end, refresh, role, queryCache]);
   useEffect(() => {
     const channel = typeof BroadcastChannel !== 'undefined' ? new BroadcastChannel('dashboard-session') : undefined;
