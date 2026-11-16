@@ -62,6 +62,8 @@ export function composeConnections(base: DashboardData, connections: Connection[
   const cash = result.sections!.cash;
   if (cash && !base.fields?.cash) { result.cash = cash.cash; result.balances = cash.balances; result.fields = { ...result.fields!, cash: !!cash.fields?.cash, balances: !!cash.fields?.balances }; }
   if (connections.some(c => c.enabled && c.type === 'fintablo')) delete result.sources!.fintablo;
+  // An explicit payables mapping replaces the legacy lookup in the debt workbook.
+  if (connections.some(c => c.enabled && c.bindings.some(b => b.section === 'debt' && b.dataset === 'payables'))) delete result.sources!.payables;
   if (!base.sources?.googleSheets?.configured) delete result.sources!.googleSheets;
   for (const [key, section] of Object.entries(result.sections!)) {
     section.sources = result.sources;
