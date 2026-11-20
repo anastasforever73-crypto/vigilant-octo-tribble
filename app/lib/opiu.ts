@@ -43,7 +43,8 @@ export function parseOpiu(grid: { values?: GridCell[] }[], sheetId: number, upda
     return { row: i + 6, label, percent: columns.some(c => line.values?.[c.index]?.effectiveFormat?.numberFormat?.type === 'PERCENT'), bold: Boolean(line.values?.[0]?.effectiveFormat?.textFormat?.bold), cells };
   });
   while (rows.length && !rows.at(-1)!.label && Object.values(rows.at(-1)!.cells).every(c => Object.values(c).every(v => v.state === 'blank'))) rows.pop();
-  return { sheet: OPIU_SHEET, url: `https://docs.google.com/spreadsheets/d/${OPIU_WORKBOOK}/edit#gid=${sheetId}`, updatedAt, months, defaultMonth: months.at(-1)!, rows };
+  const reportMonth = new Intl.DateTimeFormat('sv-SE', { timeZone: 'Europe/Moscow', year: 'numeric', month: '2-digit' }).format(new Date(updatedAt));
+  return { sheet: OPIU_SHEET, url: `https://docs.google.com/spreadsheets/d/${OPIU_WORKBOOK}/edit#gid=${sheetId}`, updatedAt, months, defaultMonth: months.filter(month => month <= reportMonth).at(-1) || months[0], rows };
 }
 export function aggregateRow(row: OpiuRow, months: string[], segment: Segment): OpiuCell {
   const cells = months.map(m => row.cells[m]?.[segment]);
