@@ -1,6 +1,5 @@
 export const OPIU_SHEET = 'Анализ ОПИУ ';
 export const OPIU_WORKBOOK = '1vwjHUAcbOZAtYuptKp8PU0Y93a3wnl2LNfzBIrhCMaM';
-export const EXCLUDED_MONTH = '2026-09';
 export const segments = ['ИТОГО', 'ТРАНЗИТ', 'СКЛАД'] as const;
 export type Segment = typeof segments[number];
 export type OpiuCell = { value: number | null; text: string; state: 'number' | 'blank' | 'error' | 'text'; address: string };
@@ -30,7 +29,7 @@ export function parseOpiu(grid: { values?: GridCell[] }[], sheetId: number, upda
     if (group) segment = segments.find(s => s === group);
     const m = monthNames.indexOf((cell.formattedValue || '').trim().toLowerCase());
     const month = `${year}-${String(m + 1).padStart(2, '0')}`;
-    if (segment && m >= 0 && month !== EXCLUDED_MONTH) columns.push({ index, month, segment });
+    if (segment && m >= 0) columns.push({ index, month, segment });
   });
   const months = [...new Set(columns.filter(c => c.segment === 'ИТОГО').map(c => c.month))].sort();
   if (!months.length || !segments.every(segment => columns.some(c => c.segment === segment)) || new Set(columns.map(c => `${c.month}:${c.segment}`)).size !== columns.length) throw new Error('Изменилась структура месяцев ОПиУ');
@@ -44,10 +43,10 @@ export function parseOpiu(grid: { values?: GridCell[] }[], sheetId: number, upda
     return { row: i + 6, label, percent: columns.some(c => line.values?.[c.index]?.effectiveFormat?.numberFormat?.type === 'PERCENT'), bold: Boolean(line.values?.[0]?.effectiveFormat?.textFormat?.bold), cells };
   });
   while (rows.length && !rows.at(-1)!.label && Object.values(rows.at(-1)!.cells).every(c => Object.values(c).every(v => v.state === 'blank'))) rows.pop();
-  return { sheet: OPIU_SHEET, url: `https://docs.google.com/spreadsheets/d/${OPIU_WORKBOOK}/edit#gid=${sheetId}`, updatedAt, months, defaultMonth: months.filter(m => m < EXCLUDED_MONTH).at(-1) || months[0], rows };
+  return { sheet: OPIU_SHEET, url: `https://docs.google.com/spreadsheets/d/${OPIU_WORKBOOK}/edit#gid=${sheetId}`, updatedAt, months, defaultMonth: months.at(-1)!, rows };
 }
 export function aggregateRow(row: OpiuRow, months: string[], segment: Segment): OpiuCell {
-  const cells = months.filter(m => m !== EXCLUDED_MONTH).map(m => row.cells[m]?.[segment]);
+  const cells = months.map(m => row.cells[m]?.[segment]);
   if (!cells.length) return { value: null, text: 'Нет данных', state: 'blank', address: '' };
   if (cells.length === 1 && cells[0]) return cells[0];
   const address = cells.map(c => c?.address).filter(Boolean).join(', ');
@@ -62,6 +61,6 @@ export function previousMonths(months: string[], available: string[]): string[] 
   if (!months.length) return [];
   const first = new Date(`${months[0]}-01T00:00:00Z`);
   const previous = months.map((_, i) => new Date(Date.UTC(first.getUTCFullYear(), first.getUTCMonth() - months.length + i, 1)).toISOString().slice(0, 7));
-  return previous.every(m => m !== EXCLUDED_MONTH && available.includes(m)) ? previous : [];
+  return previous.every(m => available.includes(m)) ? previous : [];
 }
 export const monthLabel = (month: string) => new Date(`${month}-01T00:00:00Z`).toLocaleDateString('ru-RU', { month: 'long', year: 'numeric', timeZone: 'UTC' });

@@ -24,7 +24,7 @@ async function readOpiuSources() {
 }
 
 export function opiuArchiveSpec() {
-  return { kind: 'opiu', start: 'all', end: 'all', retention: 'historical' as const, probe: () => probeArchiveSources('opiu'), load: readOpiuSources, observedAt: (data: import('./opiu').OpiuReport) => data.updatedAt,
+  return { kind: 'opiu', start: 'all', end: 'all', calculationVersion: 'opiu-all-source-months-v2', retention: 'historical' as const, probe: () => probeArchiveSources('opiu'), load: readOpiuSources, observedAt: (data: import('./opiu').OpiuReport) => data.updatedAt,
     complete: (data: import('./opiu').OpiuReport) => Boolean(data.months?.length && data.rows?.length) };
 }
 export async function readOpiu(force = false) { return archivedLoad(opiuArchiveSpec(), force); }
