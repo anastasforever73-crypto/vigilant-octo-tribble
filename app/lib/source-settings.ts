@@ -4,7 +4,7 @@ export type SourceSettings = {
   fintabloBaseUrl: string; fintabloToken: string;
   googleSheetId: string; googleServiceAccountEmail: string; googlePrivateKey: string;
   debtGoogleSheetId: string;
-  debtTransitSheet?: string; debtStockSheet?: string;
+  debtTransitSheet?: string; debtStockSheet?: string; debtReportSheet?: string; debtReportSpreadsheetId?: string;
   cashSheet: string; ordersSheet: string; debtorSheet: string; factorySheet: string; walletSheet: string; accountSheet: string; debtSheet: string;
   googleEnabled: boolean; fintabloEnabled: boolean; debtEnabled: boolean;
 };
@@ -15,6 +15,8 @@ export function getSourceSettings(): SourceSettings {
     fintabloBaseUrl: env.FINTABLO_API_URL || env.FINTABLO_API_BASE_URL || '', fintabloToken: env.FINTABLO_API_TOKEN || '',
     googleSheetId: env.GOOGLE_SHEET_ID || '', googleServiceAccountEmail: env.GOOGLE_SERVICE_ACCOUNT_EMAIL || '', googlePrivateKey: env.GOOGLE_PRIVATE_KEY || '',
     debtGoogleSheetId: env.DEBT_GOOGLE_SHEET_ID || '',
+    debtReportSheet: env.DEBT_REPORT_SHEET || 'Дебиторка',
+    debtReportSpreadsheetId: env.DEBT_REPORT_SPREADSHEET_ID || '1fewX-NndZe0RvFZZyDmc6IOMN0IQcQRXFyvtXnGGg4M',
     debtTransitSheet: env.DEBT_TRANSIT_SHEET || 'Транзит', debtStockSheet: env.DEBT_STOCK_SHEET || 'Склад',
     cashSheet: env.CASH_SHEET || 'ДДС недельный - по статьям', ordersSheet: env.ORDERS_SHEET || 'техн.лист плита - заказы',
     debtorSheet: env.DEBTOR_SHEET || 'дебиторка (расчет)', factorySheet: env.FACTORY_SHEET || 'Кредиторка по Заводу (1с)',

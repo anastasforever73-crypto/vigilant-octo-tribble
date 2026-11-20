@@ -7,6 +7,7 @@ import { debtSourceSheets, getSourceSettings, type SourceSettings } from './sour
 import { range, safeSheetsError, SheetsError, sheetsClient, spreadsheetId } from './google-sheets';
 import { getConnection, listConnections } from './connections/store';
 import { collectReceivables, combineDebt, debtSources, moscowToday, reportWeek, type ReceivablesReport } from './receivables';
+import { parseReceivablesSummary } from './receivables-summary';
 import { parseDebtArchive } from './debt-archive';
 
 export async function resolveDebtSettings(settings = getSourceSettings()): Promise<SourceSettings> {
@@ -18,7 +19,7 @@ export async function resolveDebtSettings(settings = getSourceSettings()): Promi
     if (debt.length > 1) throw new SheetsError('ambiguous', 'Найдено несколько подключений задолженности. Укажите DEBT_GOOGLE_SHEET_ID для однозначного выбора.');
     if (debt.length === 1) {
       const { connection, secrets } = await getConnection(debt[0].id);
-      if (connection.config.spreadsheetId) return { ...settings, debtTransitSheet: connection.config.debtTransitSheet || settings.debtTransitSheet, debtStockSheet: connection.config.debtStockSheet || settings.debtStockSheet, debtGoogleSheetId: connection.config.spreadsheetId, googleServiceAccountEmail: secrets.serviceAccountEmail || settings.googleServiceAccountEmail, googlePrivateKey: secrets.privateKey || settings.googlePrivateKey };
+      if (connection.config.spreadsheetId) return { ...settings, debtReportSheet: connection.config.debtReportSheet || settings.debtReportSheet, debtTransitSheet: connection.config.debtTransitSheet || settings.debtTransitSheet, debtStockSheet: connection.config.debtStockSheet || settings.debtStockSheet, debtGoogleSheetId: connection.config.spreadsheetId, googleServiceAccountEmail: secrets.serviceAccountEmail || settings.googleServiceAccountEmail, googlePrivateKey: secrets.privateKey || settings.googlePrivateKey };
     }
   }
   if (settings.debtGoogleSheetId) return settings;
@@ -35,7 +36,29 @@ async function readReceivablesLive(settings = getSourceSettings(), now = new Dat
     const client = sheetsClient(resolved), id = spreadsheetId(resolved.debtGoogleSheetId);
     const sourceSheets = debtSourceSheets(resolved);
     report.sourceSheets = sourceSheets;
-    const metadata = await client.spreadsheets.get({ spreadsheetId: id, fields: 'sheets(properties(title,gridProperties(rowCount,columnCount)))' }, { timeout: 15000, retry: false });
+    // Creditor balances retain their workbook; receivables use the selected report.
+    const summarySheet = resolved.debtReportSheet;
+    if (summarySheet) {
+      const book = spreadsheetId(resolved.debtReportSpreadsheetId || id);
+      const metadata = await client.spreadsheets.get({ spreadsheetId: book, fields: 'sheets(properties(title,gridProperties(rowCount)))' }, { timeout: 15000, retry: false });
+      const properties = metadata.data.sheets?.find(s => s.properties?.title === summarySheet)?.properties;
+      if (!properties) throw new SheetsError('sheet_missing', `В таблице дебиторки отсутствует лист «${summarySheet}»`);
+      const count = properties.gridProperties?.rowCount || 0;
+      if (!count || count > 200000) throw new SheetsError('sheet_size', 'Размер отчёта ДЗ не поддерживается');
+      const rows: unknown[][] = [];
+      for (let start = 1; start <= count; start += 10000) {
+        const end = Math.min(count, start + 9999);
+        const page = await client.spreadsheets.values.get({ spreadsheetId: book, range: range(summarySheet, `A${start}:D${end}`), majorDimension: 'ROWS', valueRenderOption: 'UNFORMATTED_VALUE' }, { timeout: 90000, retry: false });
+        for (let i = 0; i <= end - start; i++) rows.push(page.data.values?.[i] || []);
+      }
+      report.current = parseReceivablesSummary(rows, asOf, new Date().toISOString());
+      report.summarySheet = summarySheet;
+      report.summarySpreadsheetId = book;
+    }
+    const metadata = await client.spreadsheets.get({ spreadsheetId: id, fields: 'sheets(properties(title,gridProperties(rowCount,columnCount)))' }, { timeout: 15000, retry: false }).catch(error => {
+      if (!summarySheet) throw error;
+      return { data: { sheets: [] } };
+    });
     const sheets = metadata.data.sheets || [];
     const readSheet = async (title: string): Promise<unknown[][]> => {
       const properties = sheets.find(s => s.properties?.title === title)?.properties;
@@ -51,11 +74,13 @@ async function readReceivablesLive(settings = getSourceSettings(), now = new Dat
       }
       return result;
     };
+    if (!summarySheet) {
     const seenRows = new Set<string>();
     await Promise.all(debtSources.map(async source => {
       try { report.sources[source] = collectReceivables(await readSheet(sourceSheets[source]), source, asOf, seenRows); }
       catch (error) { report.errors[source] = error instanceof SheetsError ? error.message : error instanceof Error && error.message === 'Не найдена строка со всеми обязательными заголовками' ? `Лист «${sourceSheets[source]}»: не найдены обязательные заголовки. Проверьте названия колонок.` : safeSheetsError(error).message; }
     }));
+    }
     if (sheets.some(s => s.properties?.title === resolved.factorySheet)) {
       try {
         const raw = await readSheet(resolved.factorySheet);
@@ -66,9 +91,10 @@ async function readReceivablesLive(settings = getSourceSettings(), now = new Dat
       } catch { report.payablesError = `Не удалось прочитать кредиторку из «${resolved.factorySheet}». Проверьте даты и суммы либо настройте отдельное сопоставление кредиторки.`; }
     } else report.payablesError = `Лист «${resolved.factorySheet}» отсутствует. В Google Sheets выберите лист кредиторки и сопоставьте «Поставщик / кредитор» и «Остаток долга» в наборе «Кредиторская задолженность».`;
     const updatedAt = new Date().toISOString();
-    report.current = combineDebt(report.sources, updatedAt);
+    if (!summarySheet) report.current = combineDebt(report.sources, updatedAt);
     if (report.current) report.updatedAt = updatedAt;
-    if (sheets.some(s => s.properties?.title === 'Архив ДЗ')) {
+    if (summarySheet) report.archive = { status: 'missing', snapshots: [], diagnostics: [], message: 'Для готового отчёта ДЗ история не подключена. Архив с другим способом расчёта не используется.' };
+    if (!summarySheet && sheets.some(s => s.properties?.title === 'Архив ДЗ')) {
       try { report.archive = parseDebtArchive(await readSheet('Архив ДЗ'), asOf); }
       catch (error) { report.archive = { status: 'error', snapshots: [], diagnostics: [], message: error instanceof Error && error.message === 'Не найдена строка со всеми обязательными заголовками' ? 'В «Архив ДЗ» не найдены обязательные заголовки.' : safeSheetsError(error).message }; }
     }

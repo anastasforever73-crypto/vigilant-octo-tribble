@@ -172,3 +172,61 @@ test('repeated financial rows counted once; currency and negative amounts suppor
   assert.ok(result.diagnostics.some(d=>/Повторная/.test(d.reason)));
   assert.equal(r.cents(' -1\u00a0234,56 ₽ '),-123456);
 });
+
+test('ready report mode reads the selected report and never mixes legacy shipment ledgers or archives', async () => {
+  const sheets = require('../app/lib/google-sheets.ts');
+  const original = sheets.sheetsClient;
+  const calls = [];
+  const titles = ['Дебиторка','Транзит','Склад','Архив ДЗ'];
+  sheets.sheetsClient = () => ({ spreadsheets: {
+    get: async () => ({ data: { sheets: titles.map(title => ({ properties: { title, gridProperties: { rowCount: 10, columnCount: 13 } } })) } }),
+    values: { get: async p => { calls.push(p.range); assert.ok(p.range.startsWith("'Дебиторка'!")); return { data: { values: [['Менеджер','Вид оплаты','Долг','Просрочка задолженности'], ['A','нал',100,'Текущая (от 0 до 14 дн.)']] } }; } }
+  } });
+  try {
+    const {readReceivables} = require('../app/lib/read-receivables.ts');
+    const report = await readReceivables({debtEnabled:true, debtGoogleSheetId:'ready-report', debtReportSheet:'Дебиторка', googleServiceAccountEmail:'test', googlePrivateKey:'test'}, new Date(today));
+    assert.equal(report.current.totalCents,10000);
+    assert.equal(report.current.details,null);
+    assert.equal(report.summarySheet,'Дебиторка');
+    assert.equal(report.current.summaryRows.length,1);
+    assert.deepEqual(report.sources,{});
+    assert.equal(report.archive.status,'missing');
+    assert.equal(calls.length,1);
+  } finally { sheets.sheetsClient = original; }
+});
+
+test('separate summary workbook supplies debt while legacy workbook retains creditor balance', async () => {
+  const sheets = require('../app/lib/google-sheets.ts');
+  const original = sheets.sheetsClient;
+  const calls = [];
+  let broken = false;
+  sheets.sheetsClient = () => ({ spreadsheets: {
+    get: async p => ({ data: { sheets: [{ properties: { title: p.spreadsheetId === 'selected-report' ? 'Дебиторка' : 'Кредиторка', gridProperties: { rowCount: 6606, columnCount: 7 } } }] } }),
+    values: { get: async p => {
+      calls.push(p);
+      if (p.spreadsheetId === 'selected-report') {
+        assert.equal(p.range, "'Дебиторка'!A1:D6606");
+        if (broken) throw new Error('source unavailable');
+        return { data: { values: [['Менеджер','Вид оплаты','Долг','Просрочка задолженности'], ['A','нал',100,'Текущая']] } };
+      }
+      assert.ok(p.range.startsWith("'Кредиторка'!"));
+      return { data: { values: [[],[],[],['18.09.2026',null,null,null,null,null,700]] } };
+    } }
+  } });
+  const settings = { debtEnabled: true, debtGoogleSheetId: 'legacy-book', debtReportSpreadsheetId: 'selected-report', debtReportSheet: 'Дебиторка', factorySheet: 'Кредиторка', googleServiceAccountEmail: 'test', googlePrivateKey: 'test' };
+  try {
+    const {readReceivables} = require('../app/lib/read-receivables.ts');
+    const report = await readReceivables(settings, new Date(today));
+    assert.equal(report.current.totalCents,10000);
+    assert.equal(report.summarySpreadsheetId,'selected-report');
+    assert.equal(report.payables.factory,700);
+    assert.equal(report.archive.status,'missing');
+    assert.deepEqual(report.sources,{});
+    calls.length = 0;
+    broken = true;
+    const unavailable = await readReceivables(settings, new Date(today));
+    assert.equal(unavailable.current,null);
+    assert.ok(unavailable.configurationError);
+    assert.ok(calls.every(p => p.spreadsheetId === 'selected-report'));
+  } finally { sheets.sheetsClient = original; }
+});

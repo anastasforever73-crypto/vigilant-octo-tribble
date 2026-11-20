@@ -18,7 +18,7 @@ export const datasets = {
 } as const;
 export type Dataset = keyof typeof datasets;
 export type Binding = { mode?: 'primary' | 'fallback' | 'merge'; priority?: number; section: Section; dataset: Dataset; sheet: string; headerRow: number; columns: Record<string, number>; headers?: Record<string, string>; apiFields?: Record<string, string>; confirmed: boolean };
-export type ConnectionConfig = { debtTransitSheet?: string; debtStockSheet?: string; spreadsheetId?: string; baseUrl?: string; crmName?: string; documentationUrl?: string; authMethod?: string; pipelineId?: string; accountIds?: number[]; managerMapping?: Record<string, string> };
+export type ConnectionConfig = { debtTransitSheet?: string; debtStockSheet?: string; debtReportSheet?: string; spreadsheetId?: string; baseUrl?: string; crmName?: string; documentationUrl?: string; authMethod?: string; pipelineId?: string; accountIds?: number[]; managerMapping?: Record<string, string> };
 export type ConnectionInput = { name: string; type: SourceType; enabled: boolean; config: ConnectionConfig; bindings: Binding[] };
 export type Connection = ConnectionInput & { id: string; revision: number; status: string; error?: string; lastSuccess?: string; checkedAt?: string; secretFields: string[]; secretMasks?: Partial<Record<keyof Secrets, string>> };
 export type Secrets = { token?: string; serviceAccountEmail?: string; privateKey?: string };
@@ -54,7 +54,7 @@ export function parseConnection(value: unknown): ConnectionInput {
   const type = v.type as SourceType;
   const c = v.config && typeof v.config === 'object' && !Array.isArray(v.config) ? v.config as Record<string, unknown> : {};
   const config: ConnectionConfig = {};
-  for (const key of ['debtTransitSheet', 'debtStockSheet', 'spreadsheetId', 'baseUrl', 'crmName', 'documentationUrl', 'authMethod', 'pipelineId'] as const) {
+  for (const key of ['debtReportSheet', 'debtTransitSheet', 'debtStockSheet', 'spreadsheetId', 'baseUrl', 'crmName', 'documentationUrl', 'authMethod', 'pipelineId'] as const) {
     if (c[key] != null && (typeof c[key] !== 'string' || c[key].length > 1000)) throw new ConnectionError('input', 'Некорректное поле подключения');
     if (typeof c[key] === 'string' && c[key].trim()) config[key] = c[key].trim();
   }

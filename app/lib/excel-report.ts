@@ -96,6 +96,10 @@ export function dashboardReport(data: DashboardData, o: ExportOptions): ExcelRep
       report.details.push({ title: 'Кредиторская задолженность НЛПК', headers: ['Дата остатка', 'Документ', 'Срок оплаты', 'Остаток долга', 'Комментарий'], formats: { 4: RUB }, rows: (nlpk || []).map(r => [day(r.date), r.document, day(r.dueDate), r.balance, r.note]) });
       report.notes.push('НЛПК: последний снимок не позже конца выбранного периода; снимки разных дат не суммируются.');
     }
+    if (snapshot?.summaryRows) {
+      report.notes.push(`Источник: лист «${debt?.summarySheet}», готовый отчёт; разбивка по транзиту/складу и авансы отсутствуют.`);
+      report.details.push({ title: 'ДЗ по менеджерам и виду оплаты', headers: ['Менеджер', 'Вид оплаты', 'Категория', 'Долг', 'Строка источника'], rows: snapshot.summaryRows.map(r => [r.manager, r.paymentType, r.category, r.balanceCents / 100, r.row]), formats: { 4: RUB } });
+    }
     const top = snapshot ? topDebtors(snapshot) : null;
     report.tables.push({ title: 'ТОП дебиторов', headers: ['Источник', 'Ключ группировки', 'Остаток'], rows: top?.map(r => [r.source, r.key, r.balanceCents / 100]) || [], formats: { 3: RUB } });
     report.tables.push({ title: 'Возрастная разбивка', headers: ['Категория', 'Сумма'], rows: debtCategories.map(c => [c, rubles(snapshot?.categories[c])]), formats: { 2: RUB } });

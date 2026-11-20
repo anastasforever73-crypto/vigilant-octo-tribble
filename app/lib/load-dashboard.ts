@@ -58,7 +58,7 @@ async function loadDashboardSources(params: URLSearchParams, refresh = false, re
 
 export function dashboardArchiveSpec(params: URLSearchParams, refresh = false, readOnly = false) {
   const p = period(params);
-  return { kind: 'dashboard', calculationVersion: `${CALCULATION_VERSION}:${NLPK_HISTORY_VERSION}:fintablo-period-balances-v1:native-plans-v1:account-breakdown-v1`, start: p.start, end: p.end, comparisonStart: p.comparisonStart, probe: refresh ? () => probeArchiveSources('dashboard') : undefined,
+  return { kind: 'dashboard', calculationVersion: `${CALCULATION_VERSION}:${NLPK_HISTORY_VERSION}:fintablo-period-balances-v1:native-plans-v1:account-breakdown-v1:receivables-ready-report-v1`, start: p.start, end: p.end, comparisonStart: p.comparisonStart, probe: refresh ? () => probeArchiveSources('dashboard') : undefined,
     load: () => withSourceArchive(refresh, async () => {
       const data = await loadDashboardSources(params, true, readOnly);
       return { ...data, dataAsOf: sourceObservedAt() };

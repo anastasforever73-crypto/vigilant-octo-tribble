@@ -25,7 +25,8 @@ export async function probeArchiveSources(kind: string): Promise<SourceProbe> {
   } else if (kind === 'dashboard') {
     if (settings.googleEnabled) add(settings.googleSheetId, settings.googleServiceAccountEmail, settings.googlePrivateKey);
     if (settings.debtEnabled) {
-      try { const s = await resolveDebtSettings(settings); add(s.debtGoogleSheetId, s.googleServiceAccountEmail, s.googlePrivateKey); }
+      try { const s = await resolveDebtSettings(settings); add(s.debtGoogleSheetId, s.googleServiceAccountEmail, s.googlePrivateKey);
+        if (s.debtReportSheet && s.debtReportSpreadsheetId) add(s.debtReportSpreadsheetId, s.googleServiceAccountEmail, s.googlePrivateKey); }
       catch { /* An unconfigured debt source contributes no confirmed data. */ }
     }
     const connections = await listConnections();
