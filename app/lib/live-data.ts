@@ -1,7 +1,7 @@
 import type { DashboardData } from './dashboard-data';
-const rubFormatter = new Intl.NumberFormat('ru-RU', { maximumFractionDigits: 0 });
+const rubFormatter = new Intl.NumberFormat('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 export const rub = (value: number) => rubFormatter.format(value) + ' ₽';
-export const shortRub = (value: number | undefined) => value == null || !Number.isFinite(value) ? 'Нет данных' : Math.abs(value) >= 1000000 ? (value / 1000000).toLocaleString('ru-RU', { maximumFractionDigits: 1 }) + ' млн ₽' : rub(value);
+export const shortRub = (value: number | undefined) => value == null || !Number.isFinite(value) ? 'Нет данных' : Math.abs(value) >= 1000000 ? (value / 1000000).toLocaleString('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' млн ₽' : rub(value);
 export function buildLive(data: DashboardData, start: string, end: string, compare: boolean) {
   const day = 86400000;
   const previousStart = new Date(Date.parse(start) - (Date.parse(end) - Date.parse(start) + day)).toISOString().slice(0, 10);
@@ -12,7 +12,7 @@ export function buildLive(data: DashboardData, start: string, end: string, compa
   const incoming = (rows: typeof curCash) => rows.filter(x => x.amount > 0).reduce((s, x) => s + x.amount, 0);
   const outgoing = (rows: typeof curCash) => -rows.filter(x => x.amount < 0).reduce((s, x) => s + x.amount, 0);
   const inc = incoming(curCash), out = outgoing(curCash), oldInc = incoming(oldCash), oldOut = outgoing(oldCash);
-  const delta = (a: number, b: number, available: boolean) => !compare ? 'Сравнение выключено' : !available || !b ? 'Нет данных для сравнения' : `${a >= b ? '+' : '−'}${Math.abs((a / b - 1) * 100).toLocaleString('ru-RU', { maximumFractionDigits: 1 })}%`;
+  const delta = (a: number, b: number, available: boolean) => !compare ? 'Сравнение выключено' : !available || !b ? 'Нет данных для сравнения' : `${a >= b ? '+' : '−'}${Math.abs((a / b - 1) * 100).toLocaleString('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%`;
   const chart = new Map<string, { m: string; inc: number; out: number; revenue: number }>();
   for (const row of curCash) {
     const entry = chart.get(row.date) || { m: row.date, inc: 0, out: 0, revenue: 0 };

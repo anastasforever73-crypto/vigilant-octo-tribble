@@ -14,7 +14,7 @@ function KpiAmount({ cell, id }: { cell: OpiuCell; id: number }) {
   const container = useRef<HTMLElement>(null);
   const measure = useRef<HTMLSpanElement>(null);
   const [compact, setCompact] = useState(false);
-  const full = display(cell);
+  const full = cell.value == null ? display(cell) : cell.value.toLocaleString('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 2, ...(cell.text.includes('%') ? { style: 'percent' as const } : {}) });
   useEffect(() => {
     const update = () => setCompact(Boolean(container.current && measure.current && measure.current.getBoundingClientRect().width > container.current.clientWidth));
     const observer = new ResizeObserver(update);
@@ -25,7 +25,7 @@ function KpiAmount({ cell, id }: { cell: OpiuCell; id: number }) {
   }, [full]);
   const amount = cell.value;
   const unit = amount != null && Math.abs(amount) >= 1e9 ? { divisor: 1e9, label: 'млрд' } : amount != null && Math.abs(amount) >= 1e6 ? { divisor: 1e6, label: 'млн' } : { divisor: 1e3, label: 'тыс.' };
-  const visible = compact && amount != null && !cell.text.includes('%') ? `${(amount / unit.divisor).toLocaleString('ru-RU', { maximumFractionDigits: 2 })} ${unit.label} ₽` : full;
+  const visible = compact && amount != null && !cell.text.includes('%') ? `${(amount / unit.divisor).toLocaleString('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${unit.label} ₽` : full;
   return <strong ref={container} data-kpi={id} data-value={amount ?? undefined} data-numeric={amount != null} title={exact(cell)} tabIndex={0} aria-label={amount == null ? full : `${amount.toLocaleString('ru-RU', { maximumFractionDigits: 12 })}${cell.text.includes('%') ? '' : ' руб.'}`}>
     <span ref={measure} className="opiu-amount-measure" aria-hidden="true">{full}</span>
     <span className="opiu-amount-value">{visible}</span>
