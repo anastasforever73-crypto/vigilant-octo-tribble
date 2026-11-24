@@ -1,7 +1,7 @@
 'use client';
 import { createPortal } from 'react-dom';
 import { Fragment, useEffect, useRef, useState } from 'react';
-import { RefreshCw, ExternalLink } from 'lucide-react';
+import { RefreshCw } from 'lucide-react';
 import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { aggregateReportRow, opiuKpis, rowKind, monthLabel, previousMonths, segments, type OpiuCell, type OpiuReport, type Segment } from './lib/opiu';
 import './opiu.css';
@@ -67,7 +67,6 @@ export default function OpiuPanel({ canRefresh = true, controlsTarget }: { canRe
     {error && <p role="alert" className="opiu-error">{error}{report ? ' Показано последнее успешное чтение.' : ''}</p>}
     {!report && <p role="status">{loading ? 'Загрузка ОПиУ…' : 'Нет доступных данных ОПиУ'}</p>}
     {report && <>
-      <p className="source-note">{report.archive?.mode === 'archive' ? 'Архив' : 'Данные источника'} · По состоянию на {new Date(report.archive?.observedAt || report.updatedAt).toLocaleString('ru-RU')}. {report.archive?.message}</p>
       {controlsTarget && createPortal(<div className="opiu opiu-controls opiu-toolbar" aria-label="Управление отчётом по направлениям">
         <div className="opiu-modes" role="group" aria-label="Период ОПиУ">{[['month', 'Месяц'], ['range', 'Диапазон']].map(([value, label]) => <button key={value} aria-pressed={mode === value} onClick={() => setMode(value)}>{label}</button>)}</div>
         <label>{mode === 'month' ? 'Месяц' : 'С месяца'}<select aria-label="Начальный месяц ОПиУ" value={start} onChange={e => setSelection({ start: e.target.value, end: end < e.target.value ? e.target.value : end })}>{report.months.map(m => <option key={m} value={m}>{monthLabel(m)}</option>)}</select></label>
@@ -86,8 +85,6 @@ export default function OpiuPanel({ canRefresh = true, controlsTarget }: { canRe
         const total = aggregateReportRow(report.rows, row, months, s), prior = aggregateReportRow(report.rows, row, previous, s);
         return <Fragment key={s}><td title={exact(total)} data-cell={total.address} data-state={total.state} data-negative={total.value != null && total.value < 0}>{display(total)}</td>{compare && <><td title={exact(prior)}>{display(prior)}</td><td>{!row.percent && total.value != null && prior.value != null ? (total.value - prior.value).toLocaleString('ru-RU', { maximumFractionDigits: 0 }) : '—'}</td></>}</Fragment>;
       })}</tr>)}</tbody></table></div>
-      <p className="opiu-provenance"><a href={report.url} target="_blank" rel="noreferrer">{report.sheet}<ExternalLink size={14}/></a><span>Обновлено: {new Date(report.updatedAt).toLocaleString('ru-RU')}</span></p>
-      <p className="opiu-note">Суммы в рублях, округление как в источнике. Итог за период — сумма одной статьи по месяцам; при пропусках полного итога нет. Рентабельность за период — отношение прибыли к выручке. ИТОГО берётся из источника и не складывается с направлениями. Плановые показатели в источнике не выделены.</p>
     </>}
   </div>;
 }
