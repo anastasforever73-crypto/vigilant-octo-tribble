@@ -6,11 +6,11 @@ import { sectionData } from './connections/compose';
 import { buildLive } from './live-data';
 import { debtAt, debtCategories, debtSources, topDebtors } from './receivables';
 import { compareReceivables } from './receivables-comparison';
-import { aggregateRow, previousMonths, type OpiuReport, type Segment } from './opiu';
+import { aggregateRow, aggregateReportRow, previousMonths, type OpiuReport, type Segment } from './opiu';
 
 export const reportTitles = { plan: 'Планирование', overview: 'Оперативный дашборд', cash: 'ДДС', opiu: 'ОПиУ', balance: 'Баланс', debt: 'Дебиторская задолженность', sales: 'Продажи по менеджерам' } as const;
 export type ReportSection = keyof typeof reportTitles;
-export type ExportOptions = { section: ReportSection; start: string; end: string; compare: boolean; asOf?: string; segment?: Segment; mode?: string };
+export type ExportOptions = { section: ReportSection; start: string; end: string; compare: boolean; asOf?: string; segment?: Segment; selectedSegments?: Segment[]; mode?: string };
 type Value = string | number | Date | null | undefined;
 type Table = { title: string; headers: string[]; rows: Value[][]; formats?: Record<number, string>; rowFormats?: Record<number, string> };
 export type ExcelReport = { title: string; start: string; end: string; notes: string[]; tables: Table[]; details: Table[] };
@@ -112,13 +112,14 @@ export function dashboardReport(data: DashboardData, o: ExportOptions): ExcelRep
 export function opiuReport(data: OpiuReport, o: ExportOptions): ExcelReport {
   const report = base(o), segment = o.segment || 'ИТОГО';
   const months = data.months.filter(m => m >= o.start.slice(0, 7) && m <= o.end.slice(0, 7)), previous = previousMonths(months, data.months);
-  report.notes.push(`Блок: ${segment}`);
+  const selected = o.selectedSegments?.length ? o.selectedSegments : [segment];
+  report.notes.push(`Направления: ${selected.join(', ')}`);
   if (o.compare) report.notes.push(previous.length ? `Предыдущий период: ${previous.map(m => ruDate(m + '-01')).join(', ')}` : 'Нет полного предыдущего периода для сравнения');
-  const rows = data.rows.map(row => { const a = aggregateRow(row, months, segment), b = aggregateRow(row, previous, segment); return [row.label || `Строка ${row.row}`, a.value ?? a.text, ...(o.compare ? [b.value ?? b.text, !row.percent && a.value != null && b.value != null ? a.value - b.value : null] : [])]; });
-  const table = { ...metrics(rows, o.compare), title: 'Показатели ОПиУ', rowFormats: Object.fromEntries(data.rows.flatMap((r, i) => r.percent ? [[i, '0.00%']] : [])) };
+  const rows = data.rows.map(row => [row.label, ...selected.flatMap(direction => { const a = aggregateReportRow(data.rows, row, months, direction), b = aggregateReportRow(data.rows, row, previous, direction); return [a.value ?? a.text, ...(o.compare ? [b.value ?? b.text, !row.percent && a.value != null && b.value != null ? a.value - b.value : null] : [])]; })]);
+  const table = { title: 'Показатели ОПиУ', headers: ['Статья', ...selected.flatMap(direction => o.compare ? [direction, `${direction}: предыдущий период`, `${direction}: изменение`] : [direction])], rows, rowFormats: Object.fromEntries(data.rows.flatMap((r, i) => r.percent ? [[i, '0.00%']] : [])) };
   report.tables.push(table);
   const detailRows: Value[][] = [], rowFormats: Record<number, string> = {};
-  for (const row of data.rows) for (const m of [...months, ...(o.compare ? previous : [])]) {
+  for (const segment of selected) for (const row of data.rows) for (const m of [...months, ...(o.compare ? previous : [])]) {
     const cell = aggregateRow(row, [m], segment);
     if (row.percent) rowFormats[detailRows.length] = '0.00%';
     detailRows.push([months.includes(m) ? 'Выбранный' : 'Предыдущий', day(m + '-01'), row.label || `Строка ${row.row}`, segment, cell.value ?? cell.text]);

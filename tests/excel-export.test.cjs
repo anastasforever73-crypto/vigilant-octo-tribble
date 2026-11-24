@@ -115,3 +115,14 @@ test('operational export calculates wallet markup, account sum and total from ex
  const partial=await workbook(dashboardReport({...data,operational:{...op,total:metric(300)}},{...opts,section:'overview'}));
  partial.getWorksheet('Отчёт').eachRow(row=>{if(row.getCell(1).value==='Остатки ДС — всего')assert.equal(row.getCell(2).value,300);});
 });
+test('Opiu exports selected directions as separate columns and formula blocks', async () => {
+ const cell = value => ({ value, text: String(value), state: 'number', address: 'B6' });
+ const source = { months: ['2026-07', '2026-08'], rows: [{ row: 6, label: 'Выручка', percent: false, cells: { '2026-07': { ТРАНЗИТ: cell(20), СКЛАД: cell(30) }, '2026-08': { ТРАНЗИТ: cell(100), СКЛАД: cell(200) } } }] };
+ const report = opiuReport(source, { section: 'opiu', start: '2026-08-01', end: '2026-08-31', compare: true, selectedSegments: ['ТРАНЗИТ', 'СКЛАД'] });
+ assert.deepEqual(report.tables[0].rows[0], ['Выручка', 100, 20, 80, 200, 30, 170]);
+ const w = await workbook(report), formulas = [];
+ w.getWorksheet('Отчёт').eachRow(r => r.eachCell(c => { if (c.value?.formula) formulas.push(c.value); }));
+ assert.equal(formulas.length, 6);
+ assert.notEqual(formulas[0].formula, formulas[3].formula);
+ assert.deepEqual(formulas.map(f => f.result), [100, 20, 80, 200, 30, 170]);
+});

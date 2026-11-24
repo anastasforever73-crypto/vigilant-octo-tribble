@@ -40,3 +40,25 @@
 @media (max-width: 900px) { .opiu-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 500px) { .opiu-heading h2 { font-size: 20px; } .opiu-controls > label { width: 100%; } .opiu-kpis strong { font-size: 20px; } .opiu-table th:first-child { min-width: 190px; } }
 @media (max-width: 380px) { .opiu-kpis { grid-template-columns: minmax(0, 1fr); } }
+.opiu-kpis article { background: #f4f8f6; border: 1px solid #d9e6df; border-top: 4px solid #278367; border-radius: 10px; padding: 16px; }
+.opiu-kpis article > span { min-height: 38px; color: #40584e; }
+.opiu-kpis small { display: block; margin-top: 10px; color: #61766b; }
+.opiu-kpis strong, .opiu-table td { font-variant-numeric: tabular-nums; }
+.opiu-table td { font-size: 15px; letter-spacing: .02em; min-width: 150px; }
+.opiu-table .opiu-income { background: #f2faf6; color: #176b45; }
+.opiu-table .opiu-expense { color: #754735; }
+.opiu-table .opiu-total { background: #dceee5; color: #163e30; font-size: 16px; font-weight: 750; border-top: 2px solid #8eb6a2; }
+.opiu-table .opiu-ratio { background: #f0f4f8; color: #405b77; }
+.opiu-table [data-negative=true] { color: #b0303c; }
+.opiu-table th:first-child { position: sticky; left: 0; background: inherit; }
+.opiu-table thead { position: sticky; top: 0; z-index: 2; background: #edf3ef; }
+.opiu-table thead th { position: static; font-weight: 700; }
+.opiu-table thead th:first-child { position: sticky; z-index: 3; background: #edf3ef; }
+.opiu-directions { position: relative; }
+.opiu-direction-menu { position: absolute; right: 0; top: calc(100% + 8px); z-index: 5; width: min(440px, 85vw); background: white; padding: 18px; border: 1px solid #d8e3dc; border-radius: 12px; box-shadow: 0 12px 36px #173b2426; }
+.opiu-direction-menu label { flex-direction: row; align-items: center; padding: 12px 4px; font-size: 16px; cursor: pointer; }
+.opiu-direction-menu input { accent-color: #168366; width: 20px; height: 20px; }
+.opiu-direction-menu > div { display: flex; gap: 6px; margin-top: 12px; flex-wrap: wrap; }
+
+.opiu-table .opiu-emphasis th, .opiu-table .opiu-emphasis td { font-weight: 700; }
+.opiu-direction-menu button:disabled { cursor: not-allowed; }

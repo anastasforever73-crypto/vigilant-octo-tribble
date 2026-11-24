@@ -24,10 +24,12 @@ export async function GET(request: NextRequest) {
     if (!params.get('start') || !params.get('end') || !['0', '1'].includes(params.get('compare') || '')) throw Error();
     const p = period(params);
     const segment = params.get('segment') || 'ИТОГО';
+    const selectedSegments = params.get('directions')?.split(',') || [segment];
+    if (!selectedSegments.length || !selectedSegments.every(s => segments.includes(s as Segment))) throw Error();
     if (!segments.includes(segment as Segment)) throw Error();
     const asOf = params.get('asOf') ? date(params.get('asOf')) : undefined;
     if (section === 'opiu' && (p.start.slice(8) !== '01' || new Date(Date.parse(p.end) + 86400000).getUTCDate() !== 1)) throw Error();
-    options = { section: section as ReportSection, start: p.start, end: p.end, compare: params.get('compare') === '1', asOf, segment: segment as Segment };
+    options = { section: section as ReportSection, start: p.start, end: p.end, compare: params.get('compare') === '1', asOf, segment: segment as Segment, selectedSegments: [...new Set(selectedSegments)] as Segment[] };
   } catch { return json({ error: 'Проверьте выбранный период и фильтры отчёта' }, 400); }
   try {
     // No client-supplied rows, source overrides, refresh or administrative options are accepted.

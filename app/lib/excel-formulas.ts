@@ -80,12 +80,22 @@ export function applyExcelFormulas(workbook: Workbook, report: ExcelReport, tabl
   if (report.title === 'ОПиУ') {
     const main = find('Показатели ОПиУ'), detail = find('Статьи по месяцам', true);
     if (main && detail) {
-      const count = detail.table.rows.length / main.table.rows.length;
+      const comparing = main.table.headers.some(h => h.endsWith(': предыдущий период'));
+      const width = comparing ? 3 : 1;
+      const directions = (main.table.headers.length - 1) / width;
+      const count = detail.table.rows.length / (main.table.rows.length * directions);
       main.table.rows.forEach((_, i) => {
-        const block = { ...detail, first: detail.first + i * count, last: detail.first + (i + 1) * count - 1 };
-        for (const col of [2, 3]) {
-          if (main.table.headers[col - 1] === 'Изменение') continue;
-          set(main, i, col, sum(block, 5, [[1, col === 2 ? 'Выбранный' : 'Предыдущий']]));
+        for (let direction = 0; direction < directions; direction++) {
+          const offset = direction * main.table.rows.length * count + i * count;
+          const block = { ...detail, first: detail.first + offset, last: detail.first + offset + count - 1 };
+          const col = 2 + direction * width;
+          // Ratios retain the source or period calculation, rather than summing monthly percentages.
+          if (main.table.rowFormats?.[i]?.includes('%')) continue;
+          set(main, i, col, sum(block, 5, [[1, 'Выбранный']]));
+          if (comparing) {
+            set(main, i, col + 1, sum(block, 5, [[1, 'Предыдущий']]));
+            set(main, i, col + 2, `${ref(main, col, i)}-${ref(main, col + 1, i)}`);
+          }
         }
       });
     }
