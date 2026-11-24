@@ -50,3 +50,54 @@ test('native plans fill unassigned section and never override explicitly assigne
  const assigned={...base,sections:{plan:{...base}}};assert.equal(await withNativeFintabloPlans(assigned,'2026-09-24','2026-09-30'),assigned);
  }finally{store.listConnections=oldList;store.getConnection=oldGet;fintablo.readFintabloPlans=oldRead;if(oldDatabase===undefined)delete process.env.DATABASE_URL;else process.env.DATABASE_URL=oldDatabase;}
 });
+
+test('period import starts P&L while transaction requests are still pending', async () => {
+ const previous=global.fetch, pending=[], paths=[];
+ global.fetch=input=>{const url=new URL(input);paths.push(url.pathname);return new Promise(resolve=>pending.push(()=>resolve(Response.json({status:200,items:[]}))));};
+ try {
+  const {readFintablo}=require('../app/lib/fintablo.ts');
+  const reading=readFintablo('2026-09-01','2026-09-30',{fintabloBaseUrl:'https://api.fintablo.ru',fintabloToken:'test'});
+  const startedTogether=paths.includes('/v1/transaction') && paths.includes('/v1/pnl-item');
+  pending.splice(0).forEach(release=>release());
+  await new Promise(resolve=>setImmediate(resolve));
+  pending.splice(0).forEach(release=>release());
+  const result=await reading;
+  assert.equal(startedTogether,true);
+  assert.deepEqual(result.transactions,[]);assert.deepEqual(result.pnl,[]);
+ } finally {global.fetch=previous;}
+});
+
+test('cash fact excludes plans, split parents, repeated IDs and operations outside the requested dates', async () => {
+ const previous = global.fetch, requests = [];
+ const transactions = [
+   tx(100, '05.11.2026', 'income', 100),
+   tx(101, '05.11.2026', 'income', 40, 1, { parentId: 100 }),
+   tx(102, '05.11.2026', 'income', 60, 1, { parentId: 100 }),
+   tx(102, '05.11.2026', 'income', 60, 1, { parentId: 100 }),
+   tx(103, '10.11.2026', 'income', 500, 1, { isPlan: 1 }),
+   tx(104, '08.11.2026', 'outcome', 25),
+   tx(105, '09.11.2026', 'transfer', 30, 1, { moneybag2Id: 2, value2: 30 }),
+   tx(106, '31.10.2026', 'income', 999),
+ ];
+ global.fetch = async input => {
+   const url = new URL(input); requests.push(url);
+   return Response.json({ status: 200, items: url.pathname === '/v1/transaction' ? transactions : url.pathname === '/v1/moneybag' ? [account(1), account(2)] : [] });
+ };
+ try {
+   const { readFintablo } = require('../app/lib/fintablo.ts');
+   const { fintabloToDashboardData } = require('../app/lib/fintablo-adapter.ts');
+   const snapshot = await readFintablo('2026-11-01', '2026-11-24', { fintabloBaseUrl: 'https://api.fintablo.ru', fintabloToken: 'test' });
+   const dashboard = fintabloToDashboardData(snapshot);
+   const cash = dashboard.cash;
+   const { buildLive } = require('../app/lib/live-data.ts');
+   const live = buildLive(dashboard, '2026-11-01', '2026-11-24', false);
+   assert.equal(live.incoming, 100);
+   assert.equal(live.outgoing, 25);
+   assert.equal(live.net, 75);
+   assert.equal(live.transactions.filter(r => r.amount < 0).reduce((sum, row) => sum - row.amount, 0), live.outgoing);
+   assert.equal(cash.filter(r => r.amount > 0).reduce((sum, r) => sum + r.amount, 0), 100);
+   assert.equal(cash.filter(r => r.amount < 0).reduce((sum, r) => sum - r.amount, 0), 25);
+   assert.deepEqual(snapshot.transactions.map(r => r.id), [101, 102, 104, 105]);
+   assert.equal(requests.find(u => u.pathname === '/v1/transaction').searchParams.get('isPlan'), '0');
+ } finally { global.fetch = previous; }
+});
