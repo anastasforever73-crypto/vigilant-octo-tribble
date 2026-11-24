@@ -1,4 +1,5 @@
 'use client';
+import { createPortal } from 'react-dom';
 import { Fragment, useEffect, useRef, useState } from 'react';
 import { RefreshCw, ExternalLink } from 'lucide-react';
 import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
@@ -31,7 +32,7 @@ function KpiAmount({ cell, id }: { cell: OpiuCell; id: number }) {
     <span className="opiu-amount-tooltip" aria-hidden="true">{exact(cell)}</span>
   </strong>;
 }
-export default function OpiuPanel({ canRefresh = true }: { canRefresh?: boolean }) {
+export default function OpiuPanel({ canRefresh = true, controlsTarget }: { canRefresh?: boolean; controlsTarget?: HTMLElement | null }) {
   const [report, setReport] = useState<OpiuReport | null>(null);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
@@ -67,13 +68,13 @@ export default function OpiuPanel({ canRefresh = true }: { canRefresh?: boolean 
     {!report && <p role="status">{loading ? 'Загрузка ОПиУ…' : 'Нет доступных данных ОПиУ'}</p>}
     {report && <>
       <p className="source-note">{report.archive?.mode === 'archive' ? 'Архив' : 'Данные источника'} · По состоянию на {new Date(report.archive?.observedAt || report.updatedAt).toLocaleString('ru-RU')}. {report.archive?.message}</p>
-      <div className="opiu-controls">
+      {controlsTarget && createPortal(<div className="opiu opiu-controls opiu-toolbar" aria-label="Управление отчётом по направлениям">
         <div className="opiu-modes" role="group" aria-label="Период ОПиУ">{[['month', 'Месяц'], ['range', 'Диапазон']].map(([value, label]) => <button key={value} aria-pressed={mode === value} onClick={() => setMode(value)}>{label}</button>)}</div>
         <label>{mode === 'month' ? 'Месяц' : 'С месяца'}<select aria-label="Начальный месяц ОПиУ" value={start} onChange={e => setSelection({ start: e.target.value, end: end < e.target.value ? e.target.value : end })}>{report.months.map(m => <option key={m} value={m}>{monthLabel(m)}</option>)}</select></label>
         {mode === 'range' && <label>По месяц<select aria-label="Конечный месяц ОПиУ" value={end} onChange={e => setSelection({ start, end: e.target.value })}>{report.months.filter(m => m >= start).map(m => <option key={m} value={m}>{monthLabel(m)}</option>)}</select></label>}
         <div className="opiu-directions" onKeyDown={e => { if (e.key === 'Escape') setDirectionsOpen(false); }}><button aria-expanded={directionsOpen} onClick={() => { setDraftSegments([...selectedSegments]); setDirectionsOpen(!directionsOpen); }}>Направления: {selectedSegments.length} из {segments.length} ▾</button>{directionsOpen && <div className="opiu-direction-menu" role="group" aria-label="Выбор направлений">{segments.map(item => <label key={item}><input type="checkbox" checked={draftSegments.includes(item)} onChange={e => setDraftSegments(e.target.checked ? [...draftSegments, item] : draftSegments.filter(s => s !== item))}/>{item}</label>)}<div><button onClick={() => setDraftSegments([...segments])}>Выбрать все</button><button onClick={() => setDraftSegments([])}>Сбросить</button><button disabled={!draftSegments.length} onClick={() => { setSelectedSegments(segments.filter(s => draftSegments.includes(s))); setDirectionsOpen(false); }}>Готово</button></div></div>}</div>
         <label className="opiu-check"><input type="checkbox" checked={compare} onChange={e => setCompare(e.target.checked)}/>Предыдущий период</label>
-      </div>
+      </div>, controlsTarget)}
       <ExcelExportButton disabled={loading} options={{ section: 'opiu', start: start + '-01', end: new Date(Date.UTC(Number(end.slice(0, 4)), Number(end.slice(5, 7)), 0)).toISOString().slice(0, 10), compare, segment, selectedSegments }}/>
       <p className="opiu-period">{monthLabel(start)}{end !== start ? ` — ${monthLabel(end)}` : ''} · {selectedSegments.join(' / ')} · руб.</p>
       {compare && <p>{previous.length ? `Сравнение: ${monthLabel(previous[0])}${previous.length > 1 ? ` — ${monthLabel(previous.at(-1)!)}` : ''}` : 'Нет полного предыдущего периода для сравнения'}</p>}

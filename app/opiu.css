@@ -62,3 +62,20 @@
 
 .opiu-table .opiu-emphasis th, .opiu-table .opiu-emphasis td { font-weight: 700; }
 .opiu-direction-menu button:disabled { cursor: not-allowed; }
+
+/* Report controls share the global management bar with administrator actions. */
+.opiu-toolbar-slot[hidden] { display: none; }
+.opiu-toolbar-slot { min-width: 0; }
+.opiu.opiu-toolbar { gap: 8px; padding: 6px 0; border: 0; align-items: center; }
+.opiu-toolbar > label { flex-direction: row; align-items: center; white-space: nowrap; font-size: 12px; color: white; }
+.opiu-toolbar select { min-height: 32px; padding: 4px 7px; font-size: 12px; max-width: 175px; }
+.opiu-toolbar .opiu-modes { gap: 2px; }
+.reference-shell .global-topbar .opiu-toolbar button { min-height: 32px; height: auto; font-size: 12px; padding: 5px 8px; }
+.reference-shell .global-topbar .opiu-toolbar .opiu-modes [aria-pressed=true] { background: #e0f2ec; color: #145b46; border-color: #b6d9ca; }
+.opiu-toolbar .opiu-direction-menu { left: 0; right: auto; }
+.opiu-toolbar .opiu-direction-menu label { color: #263a35; }
+.reference-shell .global-topbar:has(.opiu-toolbar-slot:not([hidden])) { flex-wrap: wrap; }
+.reference-shell .global-topbar:has(.opiu-toolbar-slot:not([hidden])) .head-actions { flex: 1; flex-wrap: wrap; justify-content: flex-end; }
+.reference-shell .global-topbar:has(.opiu-toolbar-slot:not([hidden])) .topbar-status { display: none; }
+@media (max-width: 900px) { .opiu-toolbar-slot { flex-basis: 100%; } .opiu.opiu-toolbar { justify-content: flex-start; } }
+@media (max-width: 500px) { .opiu.opiu-toolbar > label { width: auto; } .opiu-toolbar .opiu-direction-menu { left: auto; right: 0; } }
