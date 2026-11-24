@@ -18,10 +18,15 @@ export class DashboardQueryCache {
   private version?: string;
   constructor(readonly scope: string) {}
   private key(start: string, end: string) { return JSON.stringify([this.scope, this.version, start, end]); }
+  private fresh(data: DashboardData) {
+    const observed = Date.parse(data.archive?.observedAt || data.archive?.createdAt || '');
+    return Number.isFinite(observed) && Date.now() - observed >= 0 && Date.now() - observed < 5 * 60 * 1000;
+  }
   get(start: string, end: string) {
     const exact = this.memory.get(this.key(start, end));
-    if (exact) return exact;
+    if (exact && this.fresh(exact)) return exact;
     for (const value of this.memory.values()) {
+      if (!this.fresh(value)) continue;
       const covered = coveredDashboard(value, start, end);
       if (covered) return covered;
     }

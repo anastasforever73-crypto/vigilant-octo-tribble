@@ -7,7 +7,7 @@ require.extensions['.ts'] = (m,f) => m._compile(ts.transpileModule(fs.readFileSy
 const { MemoryCache } = require('../app/lib/memory-cache.ts');
 const { DashboardQueryCache, coveredDashboard } = require('../app/lib/dashboard-query-cache.ts');
 const { buildLive } = require('../app/lib/live-data.ts');
-const fixture = { source: 'fixture', cash: [{ date: '2026-01-20', amount: 100, source: 'account', counterparty: 'a', article: 'a', flow: '' }], orders: [], debtor: {}, creditor: {}, balances: { date: '2026-01-31', account: 15 }, fields: { cash: true, balances: true, orders: false }, period: { start: '2026-01-01', end: '2026-01-31', comparisonStart: '2025-12-01' }, archive: { mode: 'archive', sourceVersion: 'v1', createdAt: '2026-02-01' } };
+const fixture = { source: 'fixture', cash: [{ date: '2026-01-20', amount: 100, source: 'account', counterparty: 'a', article: 'a', flow: '' }], orders: [], debtor: {}, creditor: {}, balances: { date: '2026-01-31', account: 15 }, fields: { cash: true, balances: true, orders: false }, period: { start: '2026-01-01', end: '2026-01-31', comparisonStart: '2025-12-01' }, archive: { mode: 'archive', sourceVersion: 'v1', createdAt: new Date().toISOString() } };
 test('LRU enforces bytes and entry limits', () => {
   const c = new MemoryCache(20, 2); c.set('a', 1, 8); c.set('b', 2, 8); c.get('a'); c.set('c',3,8);
   assert.equal(c.get('b'),undefined); assert.equal(c.get('a'),1); c.set('huge',4,21); assert.equal(c.get('huge'),undefined);
@@ -36,4 +36,24 @@ test('logout fences pending responses and prefetch misses never populate cache',
   assert.equal(await request,undefined); assert.equal(c.get('2026-01-01','2026-01-31'),undefined);
   global.fetch = async()=>new Response(null,{status:204});
   assert.equal(await c.load('2026-02-01','2026-02-28',{prefetch:true}),undefined);
+});
+
+test('returning to a period cannot reuse an expired balance from browser memory', async () => {
+ const oldNow = Date.now; let now = oldNow(), requests = 0;
+ Date.now = () => now;
+ global.fetch = async () => { requests++; return Response.json({...fixture, archive: {...fixture.archive, observedAt: new Date(now).toISOString()}}); };
+ try {
+  const cache = new DashboardQueryCache('freshness');
+  await cache.load('2026-01-01','2026-01-31');
+  assert.ok(cache.get('2026-01-01','2026-01-31'));
+  now += 300001;
+  assert.equal(cache.get('2026-01-01','2026-01-31'), undefined);
+  await cache.load('2026-01-01','2026-01-31');
+  assert.equal(requests, 2);
+ } finally { Date.now = oldNow; }
+});
+test('cash balance from another reporting date is unavailable', () => {
+ const data = {...fixture, balances: {date: '2026-01-30', account: 10, wallet: 20}};
+ assert.equal(buildLive(data,'2026-01-01','2026-01-31',false).balance, undefined);
+ assert.equal(buildLive({...data,balances:{...data.balances,date:'2026-01-31'}},'2026-01-01','2026-01-31',false).balance, 30);
 });

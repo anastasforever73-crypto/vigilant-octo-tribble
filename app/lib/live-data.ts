@@ -28,7 +28,7 @@ export function buildLive(data: DashboardData, start: string, end: string, compa
   }
   const revenue = orders.reduce((s, x) => s + x.revenue, 0);
   const account = data.balances.account, wallet = data.balances.wallet;
-  const balance = account == null || wallet == null ? undefined : account + wallet;
+  const balance = data.balances.date !== end || account == null || wallet == null ? undefined : account + wallet;
   const hasCash = Boolean(data.fields?.cash), hasOrders = Boolean(data.fields?.orders);
   const factoryRows = curCash.filter(x => x.amount < 0 && /завод|поставщик/i.test(`${x.article} ${x.counterparty}`));
   return {
@@ -36,7 +36,7 @@ export function buildLive(data: DashboardData, start: string, end: string, compa
     incoming: hasCash ? inc : undefined, outgoing: hasCash ? out : undefined, net: hasCash ? inc - out : undefined,
     revenue: hasOrders ? revenue : undefined, revenueDelta: delta(revenue, oldOrders.reduce((s, x) => s + x.revenue, 0), oldOrders.length > 0),
     incomingDelta: delta(inc, oldInc, oldCash.length > 0), outgoingDelta: delta(out, oldOut, oldCash.length > 0), netDelta: delta(inc - out, oldInc - oldOut, oldCash.length > 0),
-    balance, balanceDelta: 'Нет исторического остатка для сравнения',
+    balance, balanceDate: data.balances.date, balanceDelta: 'Нет исторического остатка для сравнения',
     moneySources: [{ name: 'Расчётный счёт', value: account }, { name: 'Кошелёк', value: wallet }].filter((x): x is { name: string; value: number } => x.value != null),
     chart: [...chart.values()].sort((a, b) => a.m.localeCompare(b.m)), end, rows: curCash.length,
     managers: [...managers].sort((a,b) => b[1]-a[1]).map(([name, value]) => ({ name, value: shortRub(value) })),

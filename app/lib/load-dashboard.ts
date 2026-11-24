@@ -8,7 +8,7 @@ import { NLPK_HISTORY_VERSION } from './nlpk-payables';
 import { withPlanningIndicators } from './planning-indicators';
 import { withSourceArchive, sourceObservedAt } from './source-input-archive';
 import { probeArchiveSources } from './archive-source-probe';
-import { archivedLoad } from './period-archive';
+import { CURRENT_CACHE_MAX_AGE, archivedLoad } from './period-archive';
 import 'server-only';
 import { readOperationalFinancial } from './read-operational';
 import { operationalDebt, yesterdayMoscow } from './operational';
@@ -58,8 +58,8 @@ async function loadDashboardSources(params: URLSearchParams, refresh = false, re
 
 export function dashboardArchiveSpec(params: URLSearchParams, refresh = false, readOnly = false) {
   const p = period(params);
-  return { kind: 'dashboard', calculationVersion: `${CALCULATION_VERSION}:${NLPK_HISTORY_VERSION}:fintablo-period-balances-v1:native-plans-v1:account-breakdown-v1:receivables-ready-report-v1:fintablo-facts-v2`, start: p.start, end: p.end, comparisonStart: p.comparisonStart, probe: refresh ? () => probeArchiveSources('dashboard') : undefined,
-    load: () => withSourceArchive(refresh, async () => {
+  return { kind: 'dashboard', maxAgeMs: CURRENT_CACHE_MAX_AGE, calculationVersion: `${CALCULATION_VERSION}:${NLPK_HISTORY_VERSION}:fintablo-period-balances-v1:native-plans-v1:account-breakdown-v1:receivables-ready-report-v1:fintablo-facts-v2:balance-freshness-v1`, start: p.start, end: p.end, comparisonStart: p.comparisonStart, probe: refresh ? () => probeArchiveSources('dashboard') : undefined,
+    load: () => withSourceArchive(!readOnly || refresh, async () => {
       const data = await loadDashboardSources(params, true, readOnly);
       return { ...data, dataAsOf: sourceObservedAt() };
     }),

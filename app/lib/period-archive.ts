@@ -17,7 +17,7 @@ function db() {
   if (!storageEnabled()) throw new Error('Архив: PostgreSQL не настроен.');
   return postgres(process.env.DATABASE_URL || '', { statementTimeoutMs: 15000 });
 }
-type SpecIdentity = { archiveOnly?: boolean; kind: string; start: string; end: string; comparisonStart?: string; retention?: 'historical' | 'current'; calculationVersion?: string };
+type SpecIdentity = { maxAgeMs?: number; archiveOnly?: boolean; kind: string; start: string; end: string; comparisonStart?: string; retention?: 'historical' | 'current'; calculationVersion?: string };
 export function retention(spec: SpecIdentity, today = moscowToday()) {
   return spec.retention || (spec.end !== 'all' && spec.end >= today ? 'current' : 'historical');
 }
@@ -41,7 +41,7 @@ export async function archiveStatus(): Promise<ArchiveEntry[]> {
 }
 export function archiveEligible(row: { schema_version?: number; calculation_version?: string; source_version?: string; observed_at?: string | null; payload?: unknown; last_error?: unknown; lease_until?: unknown; lease_kind?: string }, version: string, now = Date.now(), spec?: SpecIdentity) {
   const age = now - Date.parse(row.observed_at || '');
-  return (!row.lease_until || row.lease_kind === 'verify') && row.schema_version === ARCHIVE_VERSION && row.calculation_version === (spec?.calculationVersion || CALCULATION_VERSION) && row.source_version === version && Boolean(row.payload) && age >= 0;
+  return (!row.lease_until || row.lease_kind === 'verify') && row.schema_version === ARCHIVE_VERSION && row.calculation_version === (spec?.calculationVersion || CALCULATION_VERSION) && row.source_version === version && Boolean(row.payload) && age >= 0 && (spec?.maxAgeMs == null || age < spec.maxAgeMs);
 }
 export type ArchiveSpec<T> = SpecIdentity & { onlyIfChanged?: boolean; load: () => Promise<T>; complete: (data: T) => boolean; observedAt?: (data: T) => string | undefined; probe?: () => Promise<SourceProbe> };
 async function probe<T>(spec: ArchiveSpec<T>): Promise<SourceProbe> {

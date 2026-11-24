@@ -261,7 +261,7 @@ function Cash({ live, planning }: { live: LiveData; open: (s: string) => void; p
         <ReferenceMetric title="Поступления" value={live.incoming} plan={planning?.receipts} icon={ArrowUpRight}/>
         <ReferenceMetric title="Списания" value={live.outgoing} plan={planning?.payments} icon={Download}/>
         <ReferenceMetric title="Денежный поток" value={live.net} plan={planning?.net} icon={Filter}/>
-        <ReferenceMetric title="Фактический остаток" value={live.balance} icon={WalletCards} note="Остаток по подключённым счетам" tone="amber"/>
+        <ReferenceMetric title="Фактический остаток" value={live.balance} icon={WalletCards} note={`На конец ${live.end.split('-').reverse().join('.')}`} tone="amber"/>
       </div>
       <MoneyMovement live={live} planning={planning}/>
       <p className="table-context">Операций за выбранный период: {live.rows}</p><Table title="Детализация движения денег" heads={['Дата', 'Счёт', 'Контрагент', 'Статья', 'Сумма']} rows={live.transactions.slice(0, 500).map(row => [row.date, row.source, row.counterparty, row.article, rub(row.amount)])}/>
@@ -528,7 +528,7 @@ export default function Dashboard({ cacheScope, role, initialTab = 'overview', a
     const loadTimer = window.setTimeout(() => {
       if (!active) return;
       appliedRefresh.current = refresh;
-      queryCache.load(start, end, { force }).then(payload => {
+      queryCache.load(start, end, { force, revalidate: true }).then(payload => {
         if (!active || !payload) return;
         setResult({ key, data: payload });
         // Prefetch only after the selected period finishes, without competing for its database pool.

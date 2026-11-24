@@ -235,3 +235,12 @@ test('account detail release rebuilds aggregate-only archive and retains detail 
  const cached=await archive.archivedLoad(next);
  assert.equal(cached.archive.mode,'archive');assert.deepEqual(cached.operational.account.breakdown,rebuilt.operational.account.breakdown);
 });
+
+test('dashboard freshness limit expires a balance archive without source revision changes', () => {
+ const { archiveEligible, ARCHIVE_VERSION } = require('../app/lib/period-archive.ts');
+ const now = Date.now(), row = {schema_version: ARCHIVE_VERSION, calculation_version:'balance-v1', source_version:'same', observed_at:new Date(now - 300001).toISOString(),payload:'encrypted'};
+ const spec = {kind:'dashboard',start:'2026-01-01',end:'2026-01-31',calculationVersion:'balance-v1',maxAgeMs:300000};
+ assert.equal(archiveEligible(row,'same',now,spec),false);
+ assert.equal(archiveEligible({...row,observed_at:new Date(now - 1000).toISOString()},'same',now,spec),true);
+ assert.equal(archiveEligible(row,'same',now,{...spec,maxAgeMs:undefined}),true);
+});
