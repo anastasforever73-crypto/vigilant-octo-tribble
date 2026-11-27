@@ -47,3 +47,12 @@ export function buildLive(data: DashboardData, start: string, end: string, compa
   };
 }
 export type LiveData = ReturnType<typeof buildLive>;
+
+export function cashDirection(live: LiveData, direction: string) {
+  const transactions = live.transactions.filter(r => (r.direction || 'Не указано') === direction);
+  const incoming = transactions.reduce((sum, r) => sum + Math.max(0, r.amount), 0);
+  const outgoing = transactions.reduce((sum, r) => sum - Math.min(0, r.amount), 0);
+  const days = new Map<string, { m: string; inc: number; out: number; revenue: number }>();
+  for (const r of transactions) { const day = days.get(r.date) || { m: r.date, inc: 0, out: 0, revenue: 0 }; day.inc += Math.max(0, r.amount) / 1e6; day.out -= Math.min(0, r.amount) / 1e6; days.set(r.date, day); }
+  return { transactions, incoming, outgoing, net: incoming - outgoing, rows: transactions.length, chart: [...days.values()].sort((a, b) => a.m.localeCompare(b.m)) };
+}

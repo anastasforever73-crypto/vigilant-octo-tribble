@@ -9,7 +9,7 @@ export function contentHash(value: unknown): string {
   return createHash('sha256').update(JSON.stringify(canonical(value))).digest('hex');
 }
 // Bump explicitly whenever formulas, exclusions or interpretation of source fields change.
-export const CALCULATION_VERSION = 'dashboard-2026-09-28-v1';
+export const CALCULATION_VERSION = 'dashboard-2026-11-27-cash-directions-v1';
 
 /** Compare facts rather than read timestamps; preserve all receivables detail and archive series. */
 export function reportContentHash(value: unknown): string {

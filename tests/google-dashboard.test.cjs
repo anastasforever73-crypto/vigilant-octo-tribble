@@ -11,8 +11,9 @@ test('environment Google source preserves order amounts when optional delivery d
   let orderDate = '2026-11-01', revenue = 150;
   sheets.inspectSheets = async () => ({ mapping: [{ valid: true }] });
   sheets.sheetsClient = () => ({ spreadsheets: { values: { batchGet: async () => {
+    const cash = []; cash[4] = '2026-11-01'; cash[5] = 300; cash[7] = 'Склад';
     const order = []; order[0] = orderDate; order[1] = 'test-order'; order[11] = revenue; order[14] = 'Уточняется';
-    return { data: { valueRanges: [[], [order], [], [], [], []].map(values => ({ values })) } };
+    return { data: { valueRanges: [[cash], [order], [], [], [], []].map(values => ({ values })) } };
   } } } });
   archive.sourceInput = async (_key, load) => load();
   try {
@@ -20,6 +21,7 @@ test('environment Google source preserves order amounts when optional delivery d
     const settings = { googleEnabled: true, googleSheetId: 'test', cashSheet:'cash', ordersSheet:'orders', debtorSheet:'debt', factorySheet:'factory', walletSheet:'wallet', accountSheet:'account' };
     const report = await readGoogleSheets('2026-11-11', settings);
     assert.equal(report.orders.length, 1);
+    assert.equal(report.cash[0].direction, 'СКЛАД');
     assert.equal(report.orders[0].revenue, 150);
     assert.equal(report.orders[0].delivery, '');
     assert.equal(report.orders[0].date, '2026-11-01');

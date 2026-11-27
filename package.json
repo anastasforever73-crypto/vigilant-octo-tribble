@@ -11,7 +11,7 @@
     "start": "next start",
     "start:codespaces": "PORT=3100 next start --hostname 0.0.0.0 --port 3100",
     "lint": "eslint .",
-    "test": "node tests/core.test.cjs && node tests/user-access.test.cjs && node tests/receivables.test.cjs && node tests/receivables-script.test.cjs && node tests/opiu.test.cjs && node tests/planning.test.cjs && node tests/wallet-percentage.test.cjs && node tests/period-balances.test.cjs && node tests/fintablo-period-balances.test.cjs && node tests/backup.test.cjs",
+    "test": "node tests/meeting-dashboard.test.cjs && node tests/core.test.cjs && node tests/user-access.test.cjs && node tests/receivables.test.cjs && node tests/receivables-summary.test.cjs && node tests/receivables-script.test.cjs && node tests/opiu.test.cjs && node tests/planning.test.cjs && node tests/wallet-percentage.test.cjs && node tests/period-balances.test.cjs && node tests/fintablo-period-balances.test.cjs && node tests/backup.test.cjs",
     "setup-auth": "node scripts/setup-auth.mjs",
     "storage:check": "node scripts/storage.cjs check",
     "storage:migrate": "node scripts/storage.cjs migrate",

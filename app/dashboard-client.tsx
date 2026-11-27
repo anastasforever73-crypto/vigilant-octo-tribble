@@ -4,7 +4,7 @@ import { DashboardQueryCache, neighbourMonths } from './lib/dashboard-query-cach
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { DashboardData, SourceStatus } from './lib/dashboard-data';
 import type { Role } from './lib/auth';
-import { buildLive, rub, shortRub, type LiveData } from './lib/live-data';
+import { buildLive, cashDirection, rub, shortRub, type LiveData } from './lib/live-data';
 import ExcelExportButton from './excel-export-button';
 import type { ReportSection } from './lib/excel-report';
 import ArchivePanel from './archive-panel';
@@ -103,7 +103,7 @@ function Kpi({ x, open }: { x: KpiRow; open: (s: string) => void }) {
 const Tip = ({ active, payload, label }: { active?: boolean; payload?: readonly { dataKey?: string | number; color?: string; name?: string; value?: string | number }[]; label?: string | number }) =>
   active && payload?.length ? (
     <div className="tip">
-      <b>{label}</b>
+      <b>{chartDate(String(label))}</b>
       {payload.map((p) => (
         <span key={p.dataKey} style={{ color: p.color }}>
           {p.name}: {p.value} млн ₽
@@ -111,6 +111,8 @@ const Tip = ({ active, payload, label }: { active?: boolean; payload?: readonly 
       ))}
     </div>
   ) : null;
+const displayDate = (date: string) => /^\d{4}-\d{2}-\d{2}$/.test(date) ? date.split("-").reverse().join(".") : date;
+const chartDate = (date: string) => `${displayDate(date)} · ${new Date(`${date}T12:00:00Z`).toLocaleDateString("ru-RU", { weekday: "short", timeZone: "Europe/Moscow" })}`;
 function Table({
   title,
   heads,
@@ -121,9 +123,8 @@ function Table({
   rows: string[][];
 }) {
   const [q, setQ] = useState("");
-  const shown = rows.filter((r) =>
-    r.join(" ").toLowerCase().includes(q.toLowerCase()),
-  );
+  const [filters, setFilters] = useState<Record<number, string>>({});
+  const shown = rows.filter(r => r.join(" ").toLowerCase().includes(q.toLowerCase()) && heads.every((_, i) => !filters[i] || r[i]?.toLowerCase().includes(filters[i].toLowerCase())));
   return (
     <Panel title={title} sub={`${shown.length} строк в текущем представлении`}>
       <div className="tools">
@@ -135,10 +136,7 @@ function Table({
             onChange={(e) => setQ(e.target.value)}
           />
         </label>
-        <button>
-          <Download size={14} />
-          Выгрузить
-        </button>
+
       </div>
       <div className="scroll">
         <table>
@@ -148,6 +146,7 @@ function Table({
                 <th key={h}>{h}</th>
               ))}
             </tr>
+            <tr>{heads.map((h, i) => <th key={h}><input aria-label={`Фильтр: ${h}`} placeholder={h} value={filters[i] || ''} onChange={e => setFilters(old => ({ ...old, [i]: e.target.value }))}/></th>)}</tr>
           </thead>
           <tbody>
             {shown.map((r, i) => (
@@ -233,7 +232,7 @@ function MoneyMovement({ live, planning }: { live: LiveData; planning?: Planning
         {expenses.length ? <div className="expense-structure"><div className="expense-donut"><ResponsiveContainer width="100%" height={250} minWidth={1}><PieChart><Pie data={expenses} dataKey="value" nameKey="name" innerRadius="68%" outerRadius="88%" paddingAngle={1} isAnimationActive={false}>{expenses.map((row,i) => <Cell key={row.name} fill={colors[i % colors.length]}/>)}</Pie><Tooltip formatter={value => rub(Number(value))}/></PieChart></ResponsiveContainer><div className="pie-total"><b>{shortRub(live.outgoing)}</b><small>Всего выплат</small></div></div><div className="expense-legend">{expenses.map((row,i) => <div key={row.name} style={{ borderLeftColor: colors[i % colors.length] }}><span>{row.name}<small>{rub(row.value)}</small></span><b>{live.outgoing ? (row.value / live.outgoing * 100).toLocaleString('ru-RU', {maximumFractionDigits:1}) : '0'}%</b></div>)}</div></div> : <p className="reference-empty">За выбранный период нет выплат.</p>}
       </Panel>
       <Panel title="Динамика поступлений и выплат" sub="Факт и план · млн ₽">
-        {chart.length ? <ResponsiveContainer minWidth={1} minHeight={1} width="100%" height={280}><AreaChart data={chart}><defs><linearGradient id="flowFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#208d68" stopOpacity={0.23}/><stop offset="100%" stopColor="#208d68" stopOpacity={0.015}/></linearGradient></defs><CartesianGrid stroke="#edf1ef" vertical={false}/><XAxis dataKey="m" axisLine={false} tickLine={false} tick={{fontSize:10}} tickFormatter={value => String(value).slice(5).split('-').reverse().join('.')}/><YAxis width={42} axisLine={false} tickLine={false} tick={{fontSize:10}}/><Tooltip content={<Tip/>}/><Area isAnimationActive={false} dataKey="inc" name="Поступления" stroke="#208d68" fill="url(#flowFill)" strokeWidth={2}/><Area isAnimationActive={false} dataKey="out" name="Выплаты" stroke="#bc8a42" fill="transparent" strokeWidth={1.5}/><Area isAnimationActive={false} dataKey="planInc" name="План поступлений" stroke="#7e9389" strokeDasharray="5 4" fill="transparent" strokeWidth={1.5} connectNulls={false}/><Area isAnimationActive={false} dataKey="planOut" name="План списаний" stroke="#d8b278" strokeDasharray="5 4" fill="transparent" strokeWidth={1.5} connectNulls={false}/></AreaChart></ResponsiveContainer> : <p className="reference-empty">Нет операций за выбранный период.</p>}
+        {chart.length ? <ResponsiveContainer minWidth={1} minHeight={1} width="100%" height={280}><AreaChart data={chart}><defs><linearGradient id="flowFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#208d68" stopOpacity={0.23}/><stop offset="100%" stopColor="#208d68" stopOpacity={0.015}/></linearGradient></defs><CartesianGrid stroke="#edf1ef" vertical={false}/><XAxis dataKey="m" axisLine={false} tickLine={false} tick={{fontSize:10}} tickFormatter={value => chartDate(String(value))} minTickGap={35}/><YAxis width={42} axisLine={false} tickLine={false} tick={{fontSize:10}}/><Tooltip content={<Tip/>} wrapperStyle={{ pointerEvents: 'none' }} allowEscapeViewBox={{ x: false, y: false }}/><Area isAnimationActive={false} dataKey="inc" name="Поступления" stroke="#208d68" fill="url(#flowFill)" strokeWidth={2}/><Area isAnimationActive={false} dataKey="out" name="Выплаты" stroke="#bc8a42" fill="transparent" strokeWidth={1.5}/><Area isAnimationActive={false} dataKey="planInc" name="План поступлений" stroke="#7e9389" strokeDasharray="5 4" fill="transparent" strokeWidth={1.5} connectNulls={false}/><Area isAnimationActive={false} dataKey="planOut" name="План списаний" stroke="#d8b278" strokeDasharray="5 4" fill="transparent" strokeWidth={1.5} connectNulls={false}/></AreaChart></ResponsiveContainer> : <p className="reference-empty">Нет операций за выбранный период.</p>}
         <div className="chart-key"><span><i style={{background:'#208d68'}}/>Поступления</span><span><i style={{background:'#bc8a42'}}/>Выплаты</span><span><i className="chart-plan-key"/>План</span></div>
       </Panel>
     </div>
@@ -252,20 +251,25 @@ function SourceUnavailable({ title, fields }: { title: string; fields: string })
     </>
   );
 }
-function Cash({ live, planning }: { live: LiveData; open: (s: string) => void; planning?: PlanningSummary }) {
+function Cash({ live: allLive, planning }: { live: LiveData; open: (s: string) => void; planning?: PlanningSummary }) {
+  const [selectedDirection, setDirection] = useState('');
+  const direction = allLive.transactions.some(r => (r.direction || 'Не указано') === selectedDirection) ? selectedDirection : '';
+  const live = direction ? { ...allLive, ...cashDirection(allLive, direction) } : allLive;
   if (!live.hasCash) return <SourceUnavailable title="Денежные средства" fields="операции ДДС"/>;
   return (
     <>
       <Heading eye="Факт" title="Движение денежных средств" status={live.hasCash ? "Данные источника" : "Источник не подключён"} tone={live.hasCash ? "good" : "warn"} />
+      <label className="cash-direction">Направление <select value={direction} onChange={e => setDirection(e.target.value)}><option value="">Все направления</option>{[...new Set(['СКЛАД', 'ТРАНЗИТ', 'ТЕНДЕР', ...allLive.transactions.map(r => r.direction || 'Не указано')])].map(d => <option key={d} disabled={!allLive.transactions.some(r => (r.direction || 'Не указано') === d)}>{d}</option>)}</select></label>
+      {!allLive.transactions.some(r => r.direction) && <p className="hint">Направления не сопоставлены в источнике ДДС. Администратор может назначить колонку «Направление» в подключении.</p>}
       <div className="reference-metric-grid">
-        <ReferenceMetric title="Поступления" value={live.incoming} plan={planning?.receipts} icon={ArrowUpRight}/>
-        <ReferenceMetric title="Списания" value={live.outgoing} plan={planning?.payments} icon={Download}/>
-        <ReferenceMetric title="Денежный поток" value={live.net} plan={planning?.net} icon={Filter}/>
-        <ReferenceMetric title="Фактический остаток" value={live.balance} icon={WalletCards} note={`На конец ${live.end.split('-').reverse().join('.')}`} tone="amber"/>
+        <ReferenceMetric title="Поступления" value={live.incoming} plan={direction ? undefined : planning?.receipts} icon={ArrowUpRight}/>
+        <ReferenceMetric title="Списания" value={live.outgoing} plan={direction ? undefined : planning?.payments} icon={Download}/>
+        <ReferenceMetric title="Денежный поток" value={live.net} plan={direction ? undefined : planning?.net} icon={Filter}/>
+        <ReferenceMetric title={direction ? "Остаток по всем направлениям" : "Фактический остаток"} value={live.balance} icon={WalletCards} note={`На конец ${live.end.split('-').reverse().join('.')}`} tone="amber"/>
       </div>
-      <MoneyMovement live={live} planning={planning}/>
-      <p className="table-context">Операций за выбранный период: {live.rows}</p><Table title="Детализация движения денег" heads={['Дата', 'Счёт', 'Контрагент', 'Статья', 'Сумма']} rows={live.transactions.slice(0, 500).map(row => [row.date, row.source, row.counterparty, row.article, rub(row.amount)])}/>
-      {live.transactions.length > 500 && <p className="hint">Показаны первые 500 операций. Итоги рассчитаны по всем операциям периода.</p>}
+      <MoneyMovement live={live} planning={direction ? undefined : planning}/>
+      <p className="table-context">Операций за выбранный период: {live.rows}. Excel вверху страницы содержит все операции периода по всем направлениям.</p><Table title="Детализация движения денег" heads={['Дата', 'Компания', 'Счёт', 'Контрагент', 'Направление', 'Статья', 'Сумма']} rows={live.transactions.map(row => [displayDate(row.date), row.company || 'Не указана', row.source, row.counterparty, row.direction || 'Не указано', row.article, rub(row.amount)])}/>
+
     </>
   );
 }
@@ -446,6 +450,7 @@ export default function Dashboard({ cacheScope, role, initialTab = 'overview', a
   const visibleGroups = groups.filter(group => !group.ids.includes("settings")).map(group => ({ ...group, key: group.ids[0], ids: group.ids.filter(canAccess) })).filter(group => group.ids.length);
   const [opiuControlsTarget, setOpiuControlsTarget] = useState<HTMLDivElement | null>(null);
   const [tab, setTab] = useState<Tab>(initialTab);
+  const [opiuVisited, setOpiuVisited] = useState(initialTab === 'opiu');
   const [expanded, setExpanded] = useState<Record<string, boolean>>(() => Object.fromEntries(groups.map(g => [g.ids[0], g.ids.includes(initialTab)])));
   const [menuOpen, setMenuOpen] = useState(false);
   const menuButton = useRef<HTMLButtonElement>(null);
@@ -455,6 +460,7 @@ export default function Dashboard({ cacheScope, role, initialTab = 'overview', a
       const requested = location.pathname === '/balance' ? 'balance' : new URLSearchParams(location.search).get('tab') || 'overview';
       const selected = tabs.some(t => t.id === requested) && canView({ role, sections: allowedSections }, requested) ? requested as Tab : initialTab;
       setTab(selected);
+      if (selected === 'opiu') setOpiuVisited(true);
       setExpanded(previous => {
         let saved = previous;
         try { saved = { ...previous, ...JSON.parse(sessionStorage.getItem('dashboard-menu-v1') || '{}') }; } catch {}
@@ -492,7 +498,6 @@ export default function Dashboard({ cacheScope, role, initialTab = 'overview', a
     setExpanded(next);
     try { sessionStorage.setItem('dashboard-menu-v1', JSON.stringify(next)); } catch {}
   }
-  const [opiuVisited, setOpiuVisited] = useState(initialTab === 'opiu');
   function navigate(next: Tab) {
     if (next === 'opiu') setOpiuVisited(true);
     if (!canAccess(next)) return;

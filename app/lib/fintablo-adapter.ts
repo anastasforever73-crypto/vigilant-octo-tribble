@@ -3,11 +3,12 @@ import type { FintabloSnapshot } from "@/app/lib/fintablo";
 
 type Balances = { account: number; wallet: number };
 
-export function fintabloToDashboardData(snapshot: FintabloSnapshot): DashboardData {
+export function fintabloToDashboardData(snapshot: FintabloSnapshot, directionMapping: Record<string, string> = {}): DashboardData {
   const cash = snapshot.transactions.map((transaction) => ({
     date: transaction.date,
     amount: transaction.amount,
     source: transaction.account,
+    direction: directionMapping[String(transaction.directionId)] || '',
     counterparty: transaction.partner,
     article: transaction.category,
     flow: transaction.group === "income" ? "Поступление" : transaction.group === "outcome" ? "Выбытие" : transaction.group,

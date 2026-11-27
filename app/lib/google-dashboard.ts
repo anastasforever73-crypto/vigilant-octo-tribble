@@ -41,7 +41,7 @@ export async function readGoogleSheets(end: string, settings = getSourceSettings
   const inPeriod = (row: Row, column: number) => { const day = date(row[column]); return Boolean(day && day >= start && day <= end); };
   const cash = byRange.cash
     .filter(row => inPeriod(row, 4))
-    .map((row) => ({ date: date(row[4]), amount: number(row[5]), source: text(row[6]), counterparty: text(row[8]), article: text(row[10]), flow: text(row[11]) }))
+    .map((row) => ({ date: date(row[4]), amount: number(row[5]), source: text(row[6]), direction: text(row[7]).toLocaleUpperCase('ru-RU'), counterparty: text(row[8]), article: text(row[10]), flow: text(row[11]) }))
     .filter((row) => row.date && row.amount && !/внутрен|перевод между|резерв/i.test(`${row.article} ${row.counterparty}`));
   const orders = byRange.orders
     .filter(row => inPeriod(row, 0))

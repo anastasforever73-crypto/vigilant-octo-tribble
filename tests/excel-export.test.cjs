@@ -7,7 +7,7 @@ const ExcelJS = require('exceljs');
 const {dashboardReport,opiuReport,writeExcel,RUB} = require('../app/lib/excel-report.ts');
 const {visibleDashboard} = require('../app/lib/dashboard-access.ts');
 const opts = {section:'cash',start:'2026-09-01',end:'2026-09-30',compare:true};
-const cash = (date, amount, article='Продажи')=>({date,amount,article,counterparty:'=HYPERLINK("bad")',source:'SECRET_SOURCE',flow:'ДДС'});
+const cash = (date, amount, article='Продажи')=>({date,amount,article,counterparty:'=HYPERLINK("bad")',source:'Банк тест',company:'Компания тест',direction:'СКЛАД',flow:'ДДС'});
 const data = {source:'SECRET_SOURCE',cash:[cash('2026-09-01',1000.25),cash('2026-09-30',-200.10),cash('2026-08-31',400),cash('2026-10-01',999999)],orders:[],debtor:{},creditor:{},balances:{},fields:{cash:true,orders:false,balances:false},sources:{private:{token:'SECRET_TOKEN'}},period:{start:opts.start,end:opts.end,comparisonStart:'2026-08-02'}};
 async function workbook(report){const w=new ExcelJS.Workbook();await w.xlsx.load(await writeExcel(report));return w;}
 function values(w){return w.worksheets.flatMap(s=>s.getSheetValues().flat(2)).map(v=>v && typeof v==='object' && 'formula' in v ? v.result : v);}
@@ -18,6 +18,7 @@ test('XLSX roundtrip: period boundaries, exact sums, comparison, styles and safe
  assert.equal(r.tables[0].rows[0][2],400); assert.equal(r.details[0].rows.length,3);
  assert.ok(all.includes('01.09.2026–30.09.2026'));assert.ok(!all.includes(999999));
  assert.ok(!JSON.stringify(all).includes('SECRET_'));
+ assert.ok(all.includes('Банк тест'));assert.ok(all.includes('Компания тест'));assert.ok(all.includes('СКЛАД'));
  const s=w.getWorksheet('Детализация'); assert.ok(s.getTables().length);assert.equal(s.getColumn(1).width,48);
  let dates=0, amounts=0, safe=0; s.eachRow(row=>row.eachCell(c=>{if(c.value instanceof Date){dates++;assert.equal(c.numFmt,'dd.mm.yyyy');}if(c.value===1000.25){amounts++;assert.equal(c.numFmt,RUB);}if(c.value==='=HYPERLINK("bad")'){safe++;assert.equal(c.type,ExcelJS.ValueType.String);}}));assert.ok(dates&&amounts&&safe);
  const off=dashboardReport(data,{...opts,compare:false});assert.equal(off.details[0].rows.length,2);assert.equal(off.tables[0].headers.length,2);

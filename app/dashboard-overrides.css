@@ -563,3 +563,10 @@ button:disabled { opacity: .6; cursor: wait; }
   .reference-shell .global-topbar .head-actions { flex-wrap: wrap; gap: 8px; }
   .reference-shell .topbar-role { display: inline; }
 }
+
+/* Keep chart hints inside their chart and period controls above content. */
+.reference-shell .page-toolbar { position:relative; z-index:4; }
+.recharts-tooltip-wrapper { pointer-events:none; }
+.scroll thead input { width:100%; min-width:110px; max-width:200px; padding:6px; border:1px solid var(--line); border-radius:4px; font:inherit; }
+.cash-direction { display:flex; align-items:center; gap:10px; margin:12px 0; }
+.cash-direction select { padding:8px; border:1px solid var(--line); border-radius:6px; background:white; color:inherit; }

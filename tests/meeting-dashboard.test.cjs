@@ -1,0 +1,31 @@
+const test = require('node:test');
+const assert = require('node:assert/strict');
+const fs = require('node:fs'), ts = require('typescript');
+require.extensions['.ts'] = (m, file) => m._compile(ts.transpileModule(fs.readFileSync(file, 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText, file);
+const { buildLive, cashDirection } = require('../app/lib/live-data.ts');
+const row = (date, amount, direction) => ({ date, amount, direction, source:'Банк', article:'Продажи', counterparty:'Клиент', flow:'ДДС' });
+const data = { cash:[row('2026-11-23',100,'СКЛАД'),row('2026-11-24',-40,'СКЛАД'),row('2026-11-24',500,'ТРАНЗИТ'),row('2026-11-24',-10),row('2026-11-25',900,'СКЛАД')], orders:[],balances:{},debtor:{},creditor:{},fields:{cash:true} };
+test('direction totals, chart and details use the same period and rows without changing source data', () => {
+ const live = buildLive(data,'2026-11-23','2026-11-24',false);
+ const stock = cashDirection(live,'СКЛАД');
+ assert.equal(stock.incoming,100); assert.equal(stock.outgoing,40); assert.equal(stock.net,60); assert.equal(stock.rows,2);
+ assert.equal(stock.chart.reduce((s,r) => s + r.inc - r.out,0) * 1e6,60);
+ assert.equal(stock.transactions.reduce((s,r) => s + r.amount,0),stock.net);
+ assert.equal(live.transactions.length,4);assert.equal(data.cash.length,5);
+ assert.equal(cashDirection(live,'Не указано').net,-10);
+ assert.equal(cashDirection(live,'ТРАНЗИТ').net,500);
+ const next = buildLive(data,'2026-11-25','2026-11-25',false);
+ assert.equal(cashDirection(next,'СКЛАД').net,900);
+});
+const { parseConnection } = require('../app/lib/connections/model.ts');
+const { fintabloToDashboardData } = require('../app/lib/fintablo-adapter.ts');
+test('FinTablo directions require an explicit valid mapping and preserve unassigned operations', () => {
+ const input={name:'Финтабло',type:'fintablo',enabled:true,config:{directionMapping:{10:'СКЛАД',20:'ТРАНЗИТ'}},bindings:[]};
+ const parsed=parseConnection(input);
+ assert.deepEqual(parsed.config.directionMapping,input.config.directionMapping);
+ assert.throws(()=>parseConnection({...input,config:{directionMapping:{0:'СКЛАД'}}}),/directionId/);
+ assert.throws(()=>parseConnection({...input,config:{directionMapping:{10:'СКЛАД',20:'СКЛАД'}}}),/directionId/);
+ const snapshot={updatedAt:'2026-11-27T10:00:00Z',accounts:[],transactions:[{date:'2026-11-24',amount:100,account:'Банк',partner:'Клиент',category:'Выручка',group:'income',directionId:10},{date:'2026-11-24',amount:200,directionId:99}]};
+ assert.deepEqual(fintabloToDashboardData(snapshot,parsed.config.directionMapping).cash.map(r=>r.direction),['СКЛАД','']);
+ assert.ok(fintabloToDashboardData(snapshot).cash.every(r=>r.direction===''));
+});

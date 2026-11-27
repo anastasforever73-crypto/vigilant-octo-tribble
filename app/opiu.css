@@ -79,3 +79,7 @@
 .reference-shell .global-topbar:has(.opiu-toolbar-slot:not([hidden])) .topbar-status { display: none; }
 @media (max-width: 900px) { .opiu-toolbar-slot { flex-basis: 100%; } .opiu.opiu-toolbar { justify-content: flex-start; } }
 @media (max-width: 500px) { .opiu.opiu-toolbar > label { width: auto; } .opiu-toolbar .opiu-direction-menu { left: auto; right: 0; } }
+
+.opiu-metric-options { display:flex; flex-wrap:wrap; gap:10px 20px; max-height:180px; overflow:auto; margin:16px 0; border:1px solid #dce3df; border-radius:8px; padding:12px; }
+.opiu-metric-options label { flex-direction:row; align-items:center; }
+.opiu-metric-options input { accent-color:#16847b; }

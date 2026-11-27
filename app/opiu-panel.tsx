@@ -2,7 +2,7 @@
 import { createPortal } from 'react-dom';
 import { Fragment, useEffect, useRef, useState } from 'react';
 import { RefreshCw } from 'lucide-react';
-import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import { CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { aggregateReportRow, opiuKpis, rowKind, monthLabel, previousMonths, segments, type OpiuCell, type OpiuReport, type Segment } from './lib/opiu';
 import './opiu.css';
 import ExcelExportButton from './excel-export-button';
@@ -43,7 +43,9 @@ export default function OpiuPanel({ canRefresh = true, controlsTarget }: { canRe
   const [draftSegments, setDraftSegments] = useState<Segment[]>([...segments]);
   const [directionsOpen, setDirectionsOpen] = useState(false);
   const segment = selectedSegments.length === 1 ? selectedSegments[0] : 'ИТОГО';
-  const [metric, setMetric] = useState(6);
+  const [metrics, setMetrics] = useState<number[] | null>(null);
+  const [chartUnit, setChartUnit] = useState('rub');
+  const [independentScales, setIndependentScales] = useState(true);
   const [compare, setCompare] = useState(false);
   useEffect(() => {
     const controller = new AbortController();
@@ -60,8 +62,10 @@ export default function OpiuPanel({ canRefresh = true, controlsTarget }: { canRe
   const end = mode === 'month' ? start : report?.months.includes(selection.end) && selection.end >= start ? selection.end : start;
   const months = report?.months.filter(m => m >= start && m <= end) || [];
   const previous = previousMonths(months, report?.months || []);
-  const selectedMetric = report?.rows.find(r => r.row === metric);
-  const chart = months.map(month => ({ month: monthLabel(month), value: selectedMetric?.cells[month]?.[segment]?.value ?? null }));
+  const availableMetrics = report?.rows.filter(r => articleLabel(r.label).trim() && (chartUnit === 'percent' ? r.percent : !r.percent)) || [];
+  const selectedMetrics = availableMetrics.filter(r => metrics ? metrics.includes(r.row) : /^(маржинальная|чистая) прибыль$|рентабельность по (маржинальной|чистой) прибыли/i.test(articleLabel(r.label).trim()));
+  const chart = months.map(month => Object.fromEntries([['month', monthLabel(month)], ...selectedMetrics.map(row => [String(row.row), aggregateReportRow(report!.rows, row, [month], segment).value])]));
+  const colors = ['#16847b', '#b06a32', '#7756a0', '#3c76ae', '#b74467', '#728c27'];
   return <div className="opiu" aria-busy={loading}>
     <div className="opiu-heading"><h2>Отчёт о прибылях и убытках</h2>{canRefresh && <button type="button" onClick={reload} disabled={loading}><RefreshCw size={17}/>{loading ? 'Обновляем' : 'Обновить ОПиУ'}</button>}</div>
     {error && <p role="alert" className="opiu-error">{error}{report ? ' Показано последнее успешное чтение.' : ''}</p>}
@@ -75,13 +79,19 @@ export default function OpiuPanel({ canRefresh = true, controlsTarget }: { canRe
         <label className="opiu-check"><input type="checkbox" checked={compare} onChange={e => setCompare(e.target.checked)}/>Предыдущий период</label>
       </div>, controlsTarget)}
       <ExcelExportButton disabled={loading} options={{ section: 'opiu', start: start + '-01', end: new Date(Date.UTC(Number(end.slice(0, 4)), Number(end.slice(5, 7)), 0)).toISOString().slice(0, 10), compare, segment, selectedSegments }}/>
+      <p className="opiu-note" role="status">Обновлено: {new Date(report.updatedAt).toLocaleString('ru-RU', { timeZone: 'Europe/Moscow' })}{loading ? ' · Обновляем данные…' : ''}</p>
       <p className="opiu-period">{monthLabel(start)}{end !== start ? ` — ${monthLabel(end)}` : ''} · {selectedSegments.join(' / ')} · руб.</p>
       {compare && <p>{previous.length ? `Сравнение: ${monthLabel(previous[0])}${previous.length > 1 ? ` — ${monthLabel(previous.at(-1)!)}` : ''}` : 'Нет полного предыдущего периода для сравнения'}</p>}
       <div className="opiu-kpis">{opiuKpis(report.rows, months, segment).map(({ label, cell }, id) => <article key={label}><span>{label}</span><KpiAmount cell={cell} id={id}/><small>{segment}</small></article>)}</div>
-      {months.length >= 2 && <div className="opiu-chart"><label>Динамика по месяцам<select aria-label="Показатель графика ОПиУ" value={metric} onChange={e => setMetric(Number(e.target.value))}>{report.rows.filter(r => r.label && !r.percent).map(r => <option key={r.row} value={r.row}>{articleLabel(r.label)}</option>)}</select></label>
-        <div className="opiu-plot">{chart.some(c => c.value != null) ? <ResponsiveContainer width="100%" height="100%"><LineChart data={chart} margin={{ top: 20, right: 25, bottom: 12, left: 10 }}><CartesianGrid strokeDasharray="3 3"/><XAxis dataKey="month" tick={{ fontSize: 12 }}/><YAxis width={65} tickFormatter={v => `${(v / 1000000).toLocaleString('ru-RU')} млн`} tick={{ fontSize: 12 }}/><Tooltip formatter={v => typeof v === 'number' ? `${v.toLocaleString('ru-RU', { maximumFractionDigits: 2 })} руб.` : 'Нет данных'}/><Line name={articleLabel(selectedMetric?.label || '')} dataKey="value" stroke="#16847b" strokeWidth={2} dot={{ r: 4 }} connectNulls={false} isAnimationActive={false}/></LineChart></ResponsiveContainer> : <p>Нет числовых значений за выбранный период</p>}</div>
+      {months.length >= 2 && <div className="opiu-chart">
+        <h3>Динамика по месяцам</h3>
+        <div className="opiu-modes" role="group" aria-label="Единицы графика">{[['rub', 'Рубли'], ['percent', 'Проценты']].map(([value, label]) => <button key={value} aria-pressed={chartUnit === value} onClick={() => { setChartUnit(value); setMetrics(null); }}>{label}</button>)}</div>
+        <label className="opiu-check"><input type="checkbox" checked={independentScales} onChange={e => setIndependentScales(e.target.checked)}/>Отдельная шкала каждого показателя</label>
+        <fieldset className="opiu-metric-options"><legend>Показатели для сравнения</legend>{availableMetrics.map(row => <label key={row.row}><input type="checkbox" checked={selectedMetrics.some(r => r.row === row.row)} onChange={e => setMetrics(e.target.checked ? [...selectedMetrics.map(r => r.row), row.row] : selectedMetrics.filter(r => r.row !== row.row).map(r => r.row))}/>{articleLabel(row.label)}</label>)}</fieldset>
+        <p className="opiu-note">{chartUnit === 'percent' ? 'Рентабельность · %' : 'Суммы · руб.'} · {segment}. {independentScales ? 'У каждой линии своя шкала; сравнивайте динамику. Точные значения — в подсказке.' : 'Общая шкала: высота линий отражает соотношение значений.'}</p>
+        <div className="opiu-plot">{selectedMetrics.some(row => chart.some(c => c[String(row.row)] != null)) ? <ResponsiveContainer width="100%" height="100%"><LineChart data={chart} margin={{ top: 20, right: 25, bottom: 12, left: 10 }}><CartesianGrid strokeDasharray="3 3"/><XAxis dataKey="month" tick={{ fontSize: 12 }}/><YAxis yAxisId="shared" hide={independentScales} width={75} tickFormatter={v => chartUnit === 'percent' ? `${(v * 100).toLocaleString('ru-RU')}%` : `${(v / 1000000).toLocaleString('ru-RU')} млн`} tick={{ fontSize: 12 }}/>{independentScales && selectedMetrics.map(row => <YAxis key={row.row} yAxisId={String(row.row)} hide domain={['auto', 'auto']}/>)}<Tooltip wrapperStyle={{ pointerEvents: 'none' }} allowEscapeViewBox={{ x: false, y: false }} formatter={v => typeof v === 'number' ? chartUnit === 'percent' ? v.toLocaleString('ru-RU', { style: 'percent', maximumFractionDigits: 2 }) : `${v.toLocaleString('ru-RU', { maximumFractionDigits: 2 })} руб.` : 'Нет данных'}/><Legend/>{selectedMetrics.map((row, i) => <Line key={row.row} yAxisId={independentScales ? String(row.row) : "shared"} name={articleLabel(row.label)} dataKey={String(row.row)} stroke={colors[i % colors.length]} strokeWidth={2} dot={{ r: 4 }} connectNulls={false} isAnimationActive={false}/>)}</LineChart></ResponsiveContainer> : <p>Выберите показатели с числовыми значениями за выбранный период</p>}</div>
       </div>}
-      <div className="opiu-table-wrap" tabIndex={0} aria-label="Статьи ОПиУ"><table className="opiu-table"><thead><tr><th scope="col">Статья</th>{selectedSegments.map(s => <th scope="col" colSpan={compare ? 3 : 1} key={s}>{s}</th>)}</tr>{compare && <tr><th scope="col">Показатель</th>{selectedSegments.map(s => <Fragment key={s}><th scope="col">Выбранный период</th><th scope="col">Предыдущий период</th><th scope="col">Изменение, руб.</th></Fragment>)}</tr>}</thead><tbody>{report.rows.filter(row => articleLabel(row.label).trim()).map(row => <tr key={row.row} data-row={row.row} className={`opiu-${rowKind(row)}${row.bold ? ' opiu-emphasis' : ''}`}><th scope="row" title={`A${row.row}`}>{articleLabel(row.label)}</th>{selectedSegments.map(s => {
+      <div className="opiu-table-wrap" tabIndex={0} aria-label="Статьи ОПиУ"><table className="opiu-table"><thead><tr><th scope="col">Статья</th>{selectedSegments.map(s => <th scope="col" colSpan={compare ? 3 : 1} key={s}>{s}</th>)}</tr>{compare && <tr><th scope="col">Показатель</th>{selectedSegments.map(s => <Fragment key={s}><th scope="col">Выбранный период</th><th scope="col">Предыдущий период</th><th scope="col">Изменение, руб.</th></Fragment>)}</tr>}</thead><tbody>{report.rows.filter(row => articleLabel(row.label).trim() && selectedSegments.some(s => months.some(m => row.cells[m]?.[s]?.state !== 'blank' && row.cells[m]?.[s] != null))).map(row => <tr key={row.row} data-row={row.row} className={`opiu-${rowKind(row)}${row.bold ? ' opiu-emphasis' : ''}`}><th scope="row" title={`A${row.row}`}>{articleLabel(row.label)}</th>{selectedSegments.map(s => {
         const total = aggregateReportRow(report.rows, row, months, s), prior = aggregateReportRow(report.rows, row, previous, s);
         return <Fragment key={s}><td title={exact(total)} data-cell={total.address} data-state={total.state} data-negative={total.value != null && total.value < 0}>{display(total)}</td>{compare && <><td title={exact(prior)}>{display(prior)}</td><td>{!row.percent && total.value != null && prior.value != null ? (total.value - prior.value).toLocaleString('ru-RU', { maximumFractionDigits: 0 }) : '—'}</td></>}</Fragment>;
       })}</tr>)}</tbody></table></div>

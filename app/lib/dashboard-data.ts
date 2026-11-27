@@ -1,5 +1,5 @@
 import type { DebtData } from './debt-data';
-export type CashRow = { date: string; amount: number; source: string; counterparty: string; article: string; flow: string };
+export type CashRow = { company?: string; direction?: string; date: string; amount: number; source: string; counterparty: string; article: string; flow: string };
 export type OrderRow = { date: string; order: string; payer: string; client: string; region: string; product: string; qty: number; paymentType: string; revenue: number; manager: string; department: string; volume: number; paid: number; debt: number; delivery: string; stage?: string; status?: string };
 export type SourceStatus = { purpose?: string; name: string; configured: boolean; available: boolean; status: string; error?: string; updatedAt?: string; freshness: string };
 export type DashboardData = {

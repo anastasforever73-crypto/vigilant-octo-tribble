@@ -70,7 +70,7 @@ export function dashboardReport(data: DashboardData, o: ExportOptions): ExcelRep
     const articles = new Map<string, number>();
     live.transactions.forEach(r => articles.set(r.article, (articles.get(r.article) || 0) + r.amount));
     report.tables.push({ title: 'Статьи ДДС', headers: ['Статья', 'Сумма'], rows: [...articles], formats: { 2: RUB } });
-    report.details.push({ title: 'Операции ДДС', headers: ['Период', 'Дата', 'Сумма', 'Контрагент', 'Статья', 'Поток'], rows: [...live.transactions.map(r => ['Выбранный', day(r.date), r.amount, r.counterparty, r.article, r.flow]), ...(o.compare ? old.transactions.map(r => ['Предыдущий', day(r.date), r.amount, r.counterparty, r.article, r.flow]) : [])], formats: { 3: RUB } });
+    report.details.push({ title: 'Операции ДДС', headers: ['Период', 'Дата', 'Сумма', 'Контрагент', 'Статья', 'Поток', 'Компания', 'Счёт', 'Направление'], rows: [...live.transactions.map(r => ['Выбранный', day(r.date), r.amount, r.counterparty, r.article, r.flow, r.company, r.source, r.direction]), ...(o.compare ? old.transactions.map(r => ['Предыдущий', day(r.date), r.amount, r.counterparty, r.article, r.flow, r.company, r.source, r.direction]) : [])], formats: { 3: RUB } });
   } else if (o.section === 'sales') {
     const current = source.orders.filter(r => r.date >= o.start && r.date <= o.end);
     const old = source.orders.filter(r => r.date >= previousStart && r.date <= previousEnd);

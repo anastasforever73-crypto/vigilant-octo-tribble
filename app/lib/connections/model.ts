@@ -7,7 +7,7 @@ export const datasets = {
   planPayments: { label: 'План списаний', sections: ['plan'], required: ['date', 'category', 'amount'], fields: { date: 'Плановая дата', category: 'Категория', amount: 'Плановая сумма (положительная)', counterparty: 'Контрагент', note: 'Комментарий' } },
   planReceipts: { label: 'План поступлений', sections: ['plan'], required: ['date', 'category', 'amount'], fields: { date: 'Плановая дата', category: 'Категория', amount: 'Плановая сумма (положительная)', counterparty: 'Контрагент', note: 'Комментарий' } },
   balanceSheet: { label: 'Бухгалтерский баланс', sections: ['balance'], required: ['date', 'category', 'article', 'amount'], fields: { date: 'Дата баланса', category: 'Раздел (активы / обязательства / капитал)', article: 'Статья', amount: 'Сумма' } },
-  cash: { label: 'Операции ДДС', sections: ['cash'], required: ['date', 'amount'], fields: { date: 'Дата', amount: 'Сумма со знаком', source: 'Счёт / источник', counterparty: 'Контрагент', article: 'Статья', flow: 'Вид движения' } },
+  cash: { label: 'Операции ДДС', sections: ['cash'], required: ['date', 'amount'], fields: { date: 'Дата', amount: 'Сумма со знаком', source: 'Счёт / источник', company: 'Компания', direction: 'Направление', counterparty: 'Контрагент', article: 'Статья', flow: 'Вид движения' } },
   balances: { label: 'Остатки денежных средств', sections: ['cash'], required: ['date', 'account', 'wallet'], fields: { date: 'Дата', account: 'Расчётный счёт', wallet: 'Кошелёк' } },
   orders: { label: 'Заказы / сделки', sections: ['overview', 'sales'], required: ['date', 'order', 'revenue', 'manager'], fields: { date: 'Дата', order: 'Заказ / сделка', revenue: 'Сумма', manager: 'Менеджер', client: 'Клиент', payer: 'Плательщик', region: 'Регион', product: 'Товар', qty: 'Количество', paymentType: 'Вид оплаты', department: 'Отдел', volume: 'Объём', paid: 'Оплачено', debt: 'Долг', delivery: 'Дата доставки', stage: 'Этап', status: 'Статус' } },
   debt: { label: 'Реестр задолженности', sections: ['debt'], required: ['category', 'balance'], fields: { category: 'Категория задолженности', balance: 'Остаток долга', paymentMethod: 'Вид оплаты', recipient: 'Конечный получатель', direction: 'Направление', marker: 'Признак' } },
@@ -18,7 +18,7 @@ export const datasets = {
 } as const;
 export type Dataset = keyof typeof datasets;
 export type Binding = { mode?: 'primary' | 'fallback' | 'merge'; priority?: number; section: Section; dataset: Dataset; sheet: string; headerRow: number; columns: Record<string, number>; headers?: Record<string, string>; apiFields?: Record<string, string>; confirmed: boolean };
-export type ConnectionConfig = { debtTransitSheet?: string; debtStockSheet?: string; debtReportSheet?: string; spreadsheetId?: string; baseUrl?: string; crmName?: string; documentationUrl?: string; authMethod?: string; pipelineId?: string; accountIds?: number[]; managerMapping?: Record<string, string> };
+export type ConnectionConfig = { directionMapping?: Record<string, string>; debtTransitSheet?: string; debtStockSheet?: string; debtReportSheet?: string; spreadsheetId?: string; baseUrl?: string; crmName?: string; documentationUrl?: string; authMethod?: string; pipelineId?: string; accountIds?: number[]; managerMapping?: Record<string, string> };
 export type ConnectionInput = { name: string; type: SourceType; enabled: boolean; config: ConnectionConfig; bindings: Binding[] };
 export type Connection = ConnectionInput & { id: string; revision: number; status: string; error?: string; lastSuccess?: string; checkedAt?: string; secretFields: string[]; secretMasks?: Partial<Record<keyof Secrets, string>> };
 export type Secrets = { token?: string; serviceAccountEmail?: string; privateKey?: string };
@@ -71,6 +71,12 @@ export function parseConnection(value: unknown): ConnectionInput {
   for (const key of ['baseUrl', 'documentationUrl'] as const) if (config[key]) {
     try { const url = new URL(config[key]); if (url.protocol !== 'https:' || url.username || url.password || url.search || url.hash || (key === 'baseUrl' && url.pathname !== '/')) throw new Error(); }
     catch { throw new ConnectionError('url', 'Укажите HTTPS URL без секретов и параметров; базовый API URL — без пути'); }
+  }
+  if (c.directionMapping != null) {
+    if (!c.directionMapping || typeof c.directionMapping !== 'object' || Array.isArray(c.directionMapping)) throw new ConnectionError('directions', 'Проверьте сопоставление направлений Финтабло');
+    const entries = Object.entries(c.directionMapping);
+    if (entries.length > 3 || entries.some(([id, label]) => !/^[1-9]\d*$/.test(id) || !Number.isSafeInteger(Number(id)) || !['СКЛАД', 'ТРАНЗИТ', 'ТЕНДЕР'].includes(String(label))) || new Set(entries.map(([, label]) => label)).size !== entries.length) throw new ConnectionError('directions', 'Каждому направлению нужен отдельный положительный directionId');
+    config.directionMapping = Object.fromEntries(entries) as Record<string, string>;
   }
   if (c.accountIds != null) {
     if (!Array.isArray(c.accountIds) || c.accountIds.length > 100 || !c.accountIds.every(x => Number.isSafeInteger(x) && x > 0)) throw new ConnectionError('accounts', 'Выберите счета из результата проверки');

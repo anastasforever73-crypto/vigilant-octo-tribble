@@ -68,7 +68,7 @@ function mappedData(rows: Record<string, unknown>[], dataset: Binding['dataset']
     const latest = entries.filter(r => r.date <= end).map(r => r.date).sort().at(-1);
     return entries.filter(r => r.date === latest);
   }
-  if (dataset === 'cash') return rows.map(r => ({ date: date(r.date), amount: number(r.amount), source: text(r.source), counterparty: text(r.counterparty), article: text(r.article), flow: text(r.flow) } satisfies CashRow)).filter(r => inPeriod(r.date) && !/внутрен|перевод между|резерв/i.test(`${r.article} ${r.counterparty}`));
+  if (dataset === 'cash') return rows.map(r => ({ date: date(r.date), amount: number(r.amount), source: text(r.source), company: text(r.company), direction: text(r.direction).toLocaleUpperCase('ru-RU'), counterparty: text(r.counterparty), article: text(r.article), flow: text(r.flow) } satisfies CashRow)).filter(r => inPeriod(r.date) && !/внутрен|перевод между|резерв/i.test(`${r.article} ${r.counterparty}`));
   if (dataset === 'orders') return rows.map(r => ({ date: date(r.date), order: text(r.order), payer: text(r.payer), client: text(r.client), region: text(r.region), product: text(r.product), qty: number(r.qty), paymentType: text(r.paymentType), revenue: number(r.revenue), manager: text(r.manager), department: text(r.department), volume: number(r.volume), paid: number(r.paid), debt: number(r.debt), delivery: date(r.delivery), stage: text(r.stage), status: text(r.status) } satisfies OrderRow)).filter(r => inPeriod(r.date));
   if (dataset === 'balances') return rows.map(r => ({ date: date(r.date), account: number(r.account), wallet: number(r.wallet) })).filter(r => r.date && r.date <= end).sort((a, b) => b.date.localeCompare(a.date))[0] || {};
   if (dataset === 'payables') return rows.filter(r => text(r.counterparty) && text(r.balance)).map(r => ({ counterparty: text(r.counterparty), balance: number(r.balance), document: text(r.document), date: date(r.date), dueDate: date(r.dueDate) }));
@@ -111,7 +111,7 @@ const fintabloAdapter: SourceAdapter = {
       snapshot.transactions = snapshot.transactions.filter(t => ids.includes(t.accountId));
       if (c.bindings.some(b => b.dataset === 'pnl')) throw new ConnectionError('pnl_scope', 'ОПиУ не фильтруется по счетам: API не подтверждает такую связь. Используйте отдельное подключение без фильтра счетов.');
     }
-    const normalized = fintabloToDashboardData(snapshot), result: StoredData = {};
+    const normalized = fintabloToDashboardData(snapshot, c.config.directionMapping), result: StoredData = {};
     for (const b of c.bindings) {
       if (b.dataset === 'cash') result.cash = normalized.cash;
       if (b.dataset === 'balances') result.balances = fintabloToDashboardData(await readFintabloPeriodBalances(end, fintabloSettings(c, secrets), ids)).balances;
